@@ -35,6 +35,18 @@ const columns = [
     header: "Auditors",
     cell: ({ row }: { row: { original: AuditCycle } }) => row.original._count.assignments,
   },
+  {
+    id: "discrepancyReport",
+    header: "",
+    cell: ({ row }: { row: { original: AuditCycle } }) => (
+      <Link
+        to={`/audits/${row.original.id}/discrepancy-report`}
+        className="text-sm underline underline-offset-4"
+      >
+        {row.original.status === "CLOSED" ? "View report" : "Review / close"}
+      </Link>
+    ),
+  },
 ]
 
 export function AuditCyclesPage() {

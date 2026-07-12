@@ -9,6 +9,7 @@ import { AssetsPage } from "./features/assets/AssetsPage.tsx"
 import { OverdueAllocationsPage } from "./features/allocations/OverdueAllocationsPage.tsx"
 import { AuditCyclesPage } from "./features/audits/AuditCyclesPage.tsx"
 import { AuditVerificationPage } from "./features/audits/AuditVerificationPage.tsx"
+import { DiscrepancyReportPage } from "./features/audits/DiscrepancyReportPage.tsx"
 import { BookingsPage } from "./features/bookings/BookingsPage.tsx"
 import { CategoriesPage } from "./features/categories/CategoriesPage.tsx"
 import { DashboardPage } from "./features/dashboard/DashboardPage.tsx"
@@ -41,6 +42,10 @@ createRoot(document.getElementById("root")!).render(
             <Route path="/allocations/overdue" element={<OverdueAllocationsPage />} />
             <Route path="/audits" element={<AuditCyclesPage />} />
             <Route path="/audits/my-items" element={<AuditVerificationPage />} />
+            <Route
+              path="/audits/:cycleId/discrepancy-report"
+              element={<DiscrepancyReportPage />}
+            />
             <Route path="/dashboard" element={<DashboardPage />} />
           </Route>
         </Routes>

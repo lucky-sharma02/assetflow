@@ -2,12 +2,18 @@ import { Router } from "express";
 import { authenticate } from "../middleware/authenticate";
 import { requireRole } from "../middleware/requireRole";
 import {
+  closeCycle,
   createCycle,
+  generateDiscrepancyReport,
   listCycles,
   listPendingItemsForAuditor,
   recordResult,
 } from "../services/auditService";
-import { createAuditCycleSchema, recordAuditResultSchema } from "../validation/audit";
+import {
+  closeCycleSchema,
+  createAuditCycleSchema,
+  recordAuditResultSchema,
+} from "../validation/audit";
 
 export const auditsRouter = Router();
 
@@ -54,3 +60,33 @@ auditsRouter.patch("/:cycleId/items/:itemId", async (req, res, next) => {
     next(err);
   }
 });
+
+// Discrepancy report / closing are administrative oversight actions
+// (distinct from #26's auditor-execution actions), so these use a
+// straightforward role gate rather than the ownership check above.
+auditsRouter.get(
+  "/:cycleId/discrepancy-report",
+  requireRole("ADMIN", "ASSET_MANAGER"),
+  async (req, res, next) => {
+    try {
+      const items = await generateDiscrepancyReport(req.params.cycleId);
+      res.json({ items });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+auditsRouter.patch(
+  "/:cycleId/close",
+  requireRole("ADMIN", "ASSET_MANAGER"),
+  async (req, res, next) => {
+    try {
+      const input = closeCycleSchema.parse(req.body);
+      const auditCycle = await closeCycle(req.params.cycleId, req.user!.sub, input);
+      res.json({ auditCycle });
+    } catch (err) {
+      next(err);
+    }
+  }
+);

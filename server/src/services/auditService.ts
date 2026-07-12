@@ -1,7 +1,11 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { AppError } from "../middleware/errorHandler";
-import type { CreateAuditCycleInput, RecordAuditResultInput } from "../validation/audit";
+import type {
+  CloseCycleInput,
+  CreateAuditCycleInput,
+  RecordAuditResultInput,
+} from "../validation/audit";
 
 const userSummary = { select: { id: true, name: true, email: true } };
 const departmentSummary = { select: { id: true, name: true } };
@@ -124,11 +128,21 @@ export async function recordResult(
 ) {
   const record = await prisma.auditRecord.findUnique({
     where: { id: itemId },
-    include: { asset: { select: { status: true, condition: true } } },
+    include: {
+      asset: { select: { status: true, condition: true } },
+      auditCycle: { select: { status: true } },
+    },
   });
 
   if (!record || record.auditCycleId !== auditCycleId) {
     throw new AppError("Audit item not found", 404);
+  }
+
+  // A closed cycle rejects all further item edits (#27) -- even an item
+  // that's still technically pending simply stays unverified/incomplete
+  // once its cycle is closed, rather than being editable after the fact.
+  if (record.auditCycle.status === "CLOSED") {
+    throw new AppError("This audit cycle is closed", 409);
   }
 
   // Verifying is a one-shot action -- an already-verified item is not
@@ -167,5 +181,87 @@ export async function recordResult(
       verifiedBy: userSummary,
       asset: { select: { id: true, assetTag: true, name: true } },
     },
+  });
+}
+
+async function assertCycleExists(auditCycleId: string) {
+  const cycle = await prisma.auditCycle.findUnique({ where: { id: auditCycleId } });
+  if (!cycle) {
+    throw new AppError("Audit cycle not found", 404);
+  }
+  return cycle;
+}
+
+async function assertAssetsExist(assetIds: string[]) {
+  const assets = await prisma.asset.findMany({
+    where: { id: { in: assetIds } },
+    select: { id: true },
+  });
+  const foundIds = new Set(assets.map((a) => a.id));
+  const missingIds = assetIds.filter((id) => !foundIds.has(id));
+  if (missingIds.length > 0) {
+    throw new AppError("One or more lost assets were not found", 404, { missingIds });
+  }
+}
+
+export async function generateDiscrepancyReport(auditCycleId: string) {
+  await assertCycleExists(auditCycleId);
+
+  return prisma.auditRecord.findMany({
+    where: { auditCycleId, isDiscrepant: true },
+    include: {
+      asset: {
+        select: { id: true, assetTag: true, name: true, status: true, condition: true },
+      },
+      verifiedBy: userSummary,
+    },
+    orderBy: { verifiedAt: "asc" },
+  });
+}
+
+// "Confirmed missing" is a MANUAL determination, not auto-derived from
+// isDiscrepant alone. The current data model has no field distinguishing
+// "found but in worse condition than expected" (discrepant, not missing)
+// from "could not be located at all" (discrepant AND missing) -- both are
+// just isDiscrepant: true with free-text discrepancyNotes, and #26's
+// foundStatus is typed as AssetStatus (what was physically observed), not
+// a place to record "not observed at all". Auto-inferring "missing" from
+// discrepancyNotes text would mean regex-guessing a free-text field, which
+// is fragile. Instead, the Admin/Asset Manager closing the cycle reviews
+// generateDiscrepancyReport() themselves and explicitly names which
+// assetIds are confirmed missing via lostAssetIds.
+export async function closeCycle(
+  auditCycleId: string,
+  closedById: string,
+  input: CloseCycleInput
+) {
+  const cycle = await assertCycleExists(auditCycleId);
+
+  if (cycle.status === "CLOSED") {
+    throw new AppError("This audit cycle is already closed", 409);
+  }
+
+  const lostAssetIds = input.lostAssetIds ?? [];
+  if (lostAssetIds.length > 0) {
+    await assertAssetsExist(lostAssetIds);
+  }
+
+  return prisma.$transaction(async (tx) => {
+    if (lostAssetIds.length > 0) {
+      await tx.asset.updateMany({
+        where: { id: { in: lostAssetIds } },
+        data: { status: "LOST" },
+      });
+    }
+
+    return tx.auditCycle.update({
+      where: { id: auditCycleId },
+      data: {
+        status: "CLOSED",
+        closedAt: new Date(),
+        closedById,
+      },
+      include: cycleInclude,
+    });
   });
 }

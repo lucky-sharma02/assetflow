@@ -24,6 +24,7 @@ enum AssetStatus {
   ALLOCATED
   UNDER_MAINTENANCE
   RETIRED
+  LOST
 }
 
 enum AssetCondition {
@@ -72,6 +73,7 @@ model User {
   maintenanceRequested MaintenanceRequest[] @relation("MaintenanceRequestedBy")
   maintenanceApproved  MaintenanceRequest[] @relation("MaintenanceApprovedBy")
   auditCyclesCreated   AuditCycle[]         @relation("AuditCycleCreatedBy")
+  auditCyclesClosed    AuditCycle[]         @relation("AuditCycleClosedBy")
   auditAssignments     AuditAssignment[]    @relation("AuditAssignmentAuditor")
   auditRecordsVerified AuditRecord[]        @relation("AuditRecordVerifiedBy")
   notifications        Notification[]
@@ -264,6 +266,9 @@ model AuditCycle {
 
   createdById String
   createdBy   User   @relation("AuditCycleCreatedBy", fields: [createdById], references: [id])
+
+  closedById String?
+  closedBy   User?   @relation("AuditCycleClosedBy", fields: [closedById], references: [id])
 
   assignments AuditAssignment[]
   records     AuditRecord[]
