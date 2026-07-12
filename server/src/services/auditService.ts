@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { AppError } from "../middleware/errorHandler";
+import { ActivityAction, record } from "./activityLogService";
 import { NotificationType, notify } from "./notificationService";
 import type {
   CloseCycleInput,
@@ -88,6 +89,24 @@ export async function createCycle(createdById: string, input: CreateAuditCycleIn
         })),
       });
     }
+
+    // entityType "AuditCycle" (not "Asset") per #30's convention: a cycle
+    // spans many assets at once, it isn't scoped to a single one the way
+    // allocation/transfer/maintenance actions are.
+    await record(
+      createdById,
+      {
+        action: ActivityAction.AUDIT_CYCLE_CREATED,
+        entityType: "AuditCycle",
+        entityId: cycle.id,
+        metadata: {
+          departmentId: input.departmentId ?? null,
+          assetCount: inScopeAssets.length,
+          auditorCount: input.auditorIds.length,
+        },
+      },
+      tx
+    );
 
     // Re-fetch with the include (rather than reusing the plain create()
     // result) so the returned _count reflects the assignments/records
@@ -286,7 +305,7 @@ export async function closeCycle(
       });
     }
 
-    return tx.auditCycle.update({
+    const updated = await tx.auditCycle.update({
       where: { id: auditCycleId },
       data: {
         status: "CLOSED",
@@ -295,5 +314,18 @@ export async function closeCycle(
       },
       include: cycleInclude,
     });
+
+    await record(
+      closedById,
+      {
+        action: ActivityAction.AUDIT_CYCLE_CLOSED,
+        entityType: "AuditCycle",
+        entityId: auditCycleId,
+        metadata: { lostAssetIds, lostAssetCount: lostAssetIds.length },
+      },
+      tx
+    );
+
+    return updated;
   });
 }

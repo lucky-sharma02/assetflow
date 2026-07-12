@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { AppError } from "../middleware/errorHandler";
+import { ActivityAction, record } from "./activityLogService";
 import { NotificationType, notify } from "./notificationService";
 import type {
   AllocationQueryInput,
@@ -112,6 +113,21 @@ export async function allocateAsset(input: CreateAllocationInput, allocatedById:
         message: `${asset.name} (${asset.assetTag}) has been assigned to you.`,
         relatedEntityType: "Asset",
         relatedEntityId: asset.id,
+      },
+      tx
+    );
+
+    // entityType "Asset" (not "Allocation") per #30's convention: this is a
+    // per-asset lifecycle event, and "Asset" is the join point a future
+    // asset-detail activity feed would filter on. allocationId is still
+    // captured in metadata for traceability.
+    await record(
+      allocatedById,
+      {
+        action: ActivityAction.ASSET_ALLOCATED,
+        entityType: "Asset",
+        entityId: asset.id,
+        metadata: { allocationId: created.id, holderId: input.holderId },
       },
       tx
     );

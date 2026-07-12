@@ -3,6 +3,7 @@ import cors from "cors";
 import express from "express";
 import path from "path";
 import { errorHandler } from "./middleware/errorHandler";
+import { activityLogsRouter } from "./routes/activity-logs";
 import { allocationsRouter } from "./routes/allocations";
 import { assetsRouter } from "./routes/assets";
 import { auditsRouter } from "./routes/audits";
@@ -46,6 +47,7 @@ export function createApp() {
   app.use("/api/maintenance", maintenanceRouter);
   app.use("/api/audits", auditsRouter);
   app.use("/api/notifications", notificationsRouter);
+  app.use("/api/activity-logs", activityLogsRouter);
   app.use("/api/dashboard", dashboardRouter);
   app.use("/api/reports", reportsRouter);
 

@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { AppError } from "../middleware/errorHandler";
+import { ActivityAction, record } from "./activityLogService";
 import { NotificationType, notify } from "./notificationService";
 import type { CreateTransferInput, TransferQueryInput } from "../validation/transfer";
 
@@ -161,6 +162,23 @@ export async function approveTransfer(transferId: string, approvedById: string) 
         tx
       );
     }
+
+    // entityType "Asset" per #30's convention (same as allocation) --
+    // transferId/fromUserId/toUserId captured in metadata for traceability.
+    await record(
+      approvedById,
+      {
+        action: ActivityAction.TRANSFER_APPROVED,
+        entityType: "Asset",
+        entityId: asset.id,
+        metadata: {
+          transferId,
+          fromUserId: transfer.fromUserId,
+          toUserId: transfer.toUserId,
+        },
+      },
+      tx
+    );
 
     return updated;
   });
