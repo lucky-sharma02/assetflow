@@ -45,6 +45,11 @@ function App() {
               Employee directory
             </Link>
           )}
+          {(user?.role === "ADMIN" || user?.role === "ASSET_MANAGER") && (
+            <Link to="/allocations/overdue" className="text-sm underline underline-offset-4">
+              Overdue allocations
+            </Link>
+          )}
           <Button variant="outline" onClick={() => logout()}>
             Log out
           </Button>

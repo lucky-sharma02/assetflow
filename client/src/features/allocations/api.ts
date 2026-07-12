@@ -29,3 +29,8 @@ export async function returnAllocation(
   })
   return data.allocation
 }
+
+export async function listOverdueAllocations(): Promise<Allocation[]> {
+  const data = await apiFetch("/api/allocations?overdue=true")
+  return data.allocations
+}
