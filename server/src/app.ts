@@ -5,6 +5,7 @@ import path from "path";
 import { errorHandler } from "./middleware/errorHandler";
 import { allocationsRouter } from "./routes/allocations";
 import { assetsRouter } from "./routes/assets";
+import { auditsRouter } from "./routes/audits";
 import { authRouter } from "./routes/auth";
 import { bookingsRouter } from "./routes/bookings";
 import { categoriesRouter } from "./routes/categories";
@@ -40,6 +41,7 @@ export function createApp() {
   app.use("/api/allocations", allocationsRouter);
   app.use("/api/transfers", transfersRouter);
   app.use("/api/maintenance", maintenanceRouter);
+  app.use("/api/audits", auditsRouter);
 
   app.use(errorHandler);
 
