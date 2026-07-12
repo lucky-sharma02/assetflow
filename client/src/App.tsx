@@ -50,6 +50,9 @@ function App() {
               Overdue allocations
             </Link>
           )}
+          <Link to="/audits" className="text-sm underline underline-offset-4">
+            Audit cycles
+          </Link>
           <Button variant="outline" onClick={() => logout()}>
             Log out
           </Button>

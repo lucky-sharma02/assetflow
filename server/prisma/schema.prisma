@@ -254,6 +254,7 @@ model AuditCycle {
   name      String
   status    AuditCycleStatus @default(OPEN)
   startDate DateTime         @default(now())
+  endDate   DateTime
   closedAt  DateTime?
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
@@ -283,14 +284,20 @@ model AuditAssignment {
   @@unique([auditCycleId, auditorId])
 }
 
+// Rows are generated PENDING (verifiedAt/foundStatus/foundCondition/
+// verifiedById all null) when an AuditCycle is created (#25), one per
+// in-scope asset, and only filled in once actually verified (#26).
+// Pending vs verified is inferred from verifiedAt IS NULL / NOT NULL --
+// no separate status field, to avoid two sources of truth for the same
+// state.
 model AuditRecord {
-  id               String         @id @default(cuid())
-  verifiedAt       DateTime       @default(now())
-  foundStatus      AssetStatus
-  foundCondition   AssetCondition
-  isDiscrepant     Boolean        @default(false)
+  id               String          @id @default(cuid())
+  verifiedAt       DateTime?
+  foundStatus      AssetStatus?
+  foundCondition   AssetCondition?
+  isDiscrepant     Boolean         @default(false)
   discrepancyNotes String?
-  createdAt        DateTime       @default(now())
+  createdAt        DateTime        @default(now())
 
   auditCycleId String
   auditCycle   AuditCycle @relation(fields: [auditCycleId], references: [id])
@@ -298,8 +305,8 @@ model AuditRecord {
   assetId String
   asset   Asset  @relation(fields: [assetId], references: [id])
 
-  verifiedById String
-  verifiedBy   User   @relation("AuditRecordVerifiedBy", fields: [verifiedById], references: [id])
+  verifiedById String?
+  verifiedBy   User?   @relation("AuditRecordVerifiedBy", fields: [verifiedById], references: [id])
 
   @@unique([auditCycleId, assetId])
   @@index([assetId])

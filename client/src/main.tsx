@@ -7,6 +7,7 @@ import { SignupPage } from "./features/auth/SignupPage.tsx"
 import { AssetDetailPage } from "./features/assets/AssetDetailPage.tsx"
 import { AssetsPage } from "./features/assets/AssetsPage.tsx"
 import { OverdueAllocationsPage } from "./features/allocations/OverdueAllocationsPage.tsx"
+import { AuditCyclesPage } from "./features/audits/AuditCyclesPage.tsx"
 import { BookingsPage } from "./features/bookings/BookingsPage.tsx"
 import { CategoriesPage } from "./features/categories/CategoriesPage.tsx"
 import { DepartmentsPage } from "./features/departments/DepartmentsPage.tsx"
@@ -36,6 +37,7 @@ createRoot(document.getElementById("root")!).render(
             <Route path="/bookings" element={<BookingsPage />} />
             <Route path="/transfers" element={<TransfersPage />} />
             <Route path="/allocations/overdue" element={<OverdueAllocationsPage />} />
+            <Route path="/audits" element={<AuditCyclesPage />} />
           </Route>
         </Routes>
       </AuthProvider>
