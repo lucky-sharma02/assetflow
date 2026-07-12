@@ -12,6 +12,11 @@ import { AllocateDialog } from "@/features/allocations/AllocateDialog"
 import { allocateAsset, returnAllocation } from "@/features/allocations/api"
 import { ReturnDialog } from "@/features/allocations/ReturnDialog"
 import { MaintenanceRequestFormDialog } from "@/features/maintenance/MaintenanceRequestFormDialog"
+import {
+  approveMaintenanceRequest,
+  rejectMaintenanceRequest,
+  resolveMaintenanceRequest,
+} from "@/features/maintenance/api"
 import { RequestTransferDialog } from "@/features/transfers/RequestTransferDialog"
 import { createTransfer } from "@/features/transfers/api"
 import { API_URL } from "@/lib/api"
@@ -38,6 +43,7 @@ export function AssetDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { user } = useAuth()
   const canAllocate = user?.role === "ADMIN" || user?.role === "ASSET_MANAGER"
+  const canManageMaintenance = user?.role === "ASSET_MANAGER"
 
   const [asset, setAsset] = useState<AssetDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -76,6 +82,21 @@ export function AssetDetailPage() {
   const handleReturn = async (conditionAtReturn: AssetDetail["condition"], notes?: string) => {
     if (!activeAllocation) return
     await returnAllocation(activeAllocation.id, conditionAtReturn, notes)
+    refresh()
+  }
+
+  const handleApproveMaintenance = async (maintenanceRequestId: string) => {
+    await approveMaintenanceRequest(maintenanceRequestId)
+    refresh()
+  }
+
+  const handleRejectMaintenance = async (maintenanceRequestId: string) => {
+    await rejectMaintenanceRequest(maintenanceRequestId)
+    refresh()
+  }
+
+  const handleResolveMaintenance = async (maintenanceRequestId: string) => {
+    await resolveMaintenanceRequest(maintenanceRequestId)
     refresh()
   }
 
@@ -164,22 +185,39 @@ export function AssetDetailPage() {
           </Section>
           <Section title="Maintenance requests" count={asset.maintenanceRequests.length}>
             {asset.maintenanceRequests.map((m) => (
-              <li key={m.id}>
-                {m.status} — {m.issueDescription}
-                {m.photoUrl && (
-                  <>
-                    {" "}
-                    (
-                    <a
-                      href={`${API_URL}${m.photoUrl}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="underline underline-offset-4"
-                    >
-                      photo
-                    </a>
-                    )
-                  </>
+              <li key={m.id} className="flex items-center justify-between gap-2">
+                <span>
+                  {m.status} — {m.issueDescription}
+                  {m.photoUrl && (
+                    <>
+                      {" "}
+                      (
+                      <a
+                        href={`${API_URL}${m.photoUrl}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="underline underline-offset-4"
+                      >
+                        photo
+                      </a>
+                      )
+                    </>
+                  )}
+                </span>
+                {canManageMaintenance && m.status === "REQUESTED" && (
+                  <span className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => handleApproveMaintenance(m.id)}>
+                      Approve
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => handleRejectMaintenance(m.id)}>
+                      Reject
+                    </Button>
+                  </span>
+                )}
+                {canManageMaintenance && m.status === "APPROVED" && (
+                  <Button size="sm" variant="outline" onClick={() => handleResolveMaintenance(m.id)}>
+                    Resolve
+                  </Button>
                 )}
               </li>
             ))}

@@ -9,3 +9,9 @@ export const createMaintenanceRequestSchema = z.object({
 });
 
 export type CreateMaintenanceRequestInput = z.infer<typeof createMaintenanceRequestSchema>;
+
+export const rejectMaintenanceRequestSchema = z.object({
+  notes: z.string().trim().max(2000).optional(),
+});
+
+export type RejectMaintenanceRequestInput = z.infer<typeof rejectMaintenanceRequestSchema>;
