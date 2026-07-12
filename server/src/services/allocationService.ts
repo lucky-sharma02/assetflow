@@ -1,7 +1,11 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { AppError } from "../middleware/errorHandler";
-import type { AllocationQueryInput, CreateAllocationInput } from "../validation/allocation";
+import type {
+  AllocationQueryInput,
+  CreateAllocationInput,
+  ReturnAllocationInput,
+} from "../validation/allocation";
 
 const userSummary = { select: { id: true, name: true, email: true } };
 
@@ -80,4 +84,41 @@ export async function allocateAsset(input: CreateAllocationInput, allocatedById:
   ]);
 
   return allocation;
+}
+
+// Asset return + condition check-in: closes out the ACTIVE allocation,
+// records the condition the asset was actually returned in, and syncs
+// the asset back to AVAILABLE with that condition as its new current
+// condition. Deliberately does not auto-route to UNDER_MAINTENANCE even
+// if the returned condition is POOR/DAMAGED -- maintenance requests are
+// their own explicit workflow (#22-24), not an automatic side effect.
+export async function returnAllocation(allocationId: string, input: ReturnAllocationInput) {
+  const allocation = await prisma.allocation.findUnique({ where: { id: allocationId } });
+  if (!allocation) {
+    throw new AppError("Allocation not found", 404);
+  }
+  if (allocation.status !== "ACTIVE") {
+    throw new AppError("Allocation has already been returned", 409);
+  }
+
+  const now = new Date();
+
+  const [updatedAllocation] = await prisma.$transaction([
+    prisma.allocation.update({
+      where: { id: allocationId },
+      data: {
+        status: "RETURNED",
+        returnedAt: now,
+        conditionAtReturn: input.conditionAtReturn,
+        notes: input.notes ?? allocation.notes,
+      },
+      include: allocationInclude,
+    }),
+    prisma.asset.update({
+      where: { id: allocation.assetId },
+      data: { status: "AVAILABLE", condition: input.conditionAtReturn },
+    }),
+  ]);
+
+  return updatedAllocation;
 }

@@ -17,3 +17,15 @@ export async function allocateAsset(input: AllocateAssetInput): Promise<Allocati
   })
   return data.allocation
 }
+
+export async function returnAllocation(
+  allocationId: string,
+  conditionAtReturn: AssetCondition,
+  notes?: string
+): Promise<Allocation> {
+  const data = await apiFetch(`/api/allocations/${allocationId}/return`, {
+    method: "PATCH",
+    body: JSON.stringify({ conditionAtReturn, notes }),
+  })
+  return data.allocation
+}
