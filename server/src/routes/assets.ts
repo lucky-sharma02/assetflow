@@ -2,15 +2,16 @@ import { Router } from "express";
 import { authenticate } from "../middleware/authenticate";
 import { requireRole } from "../middleware/requireRole";
 import { getAssetById, listAssets, registerAsset } from "../services/assetService";
-import { registerAssetSchema } from "../validation/asset";
+import { assetQuerySchema, registerAssetSchema } from "../validation/asset";
 
 export const assetsRouter = Router();
 
 assetsRouter.use(authenticate);
 
-assetsRouter.get("/", async (_req, res, next) => {
+assetsRouter.get("/", async (req, res, next) => {
   try {
-    const assets = await listAssets();
+    const filters = assetQuerySchema.parse(req.query);
+    const assets = await listAssets(filters);
     res.json({ assets });
   } catch (err) {
     next(err);
