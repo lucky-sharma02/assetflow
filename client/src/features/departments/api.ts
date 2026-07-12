@@ -6,18 +6,22 @@ export async function listDepartments(): Promise<Department[]> {
   return data.departments
 }
 
-export async function createDepartment(name: string): Promise<Department> {
+export async function createDepartment(name: string, headId?: string | null): Promise<Department> {
   const data = await apiFetch("/api/departments", {
     method: "POST",
-    body: JSON.stringify({ name }),
+    body: JSON.stringify({ name, headId: headId ?? undefined }),
   })
   return data.department
 }
 
-export async function updateDepartment(id: string, name: string): Promise<Department> {
+export async function updateDepartment(
+  id: string,
+  name: string,
+  headId?: string | null
+): Promise<Department> {
   const data = await apiFetch(`/api/departments/${id}`, {
     method: "PATCH",
-    body: JSON.stringify({ name }),
+    body: JSON.stringify({ name, headId }),
   })
   return data.department
 }

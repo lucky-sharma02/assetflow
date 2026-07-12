@@ -31,6 +31,11 @@ function App() {
           <Link to="/categories" className="text-sm underline underline-offset-4">
             Manage asset categories
           </Link>
+          {(user?.role === "ADMIN" || user?.role === "ASSET_MANAGER") && (
+            <Link to="/employees" className="text-sm underline underline-offset-4">
+              Employee directory
+            </Link>
+          )}
           <Button variant="outline" onClick={() => logout()}>
             Log out
           </Button>

@@ -52,9 +52,9 @@ export function DepartmentsPage() {
 
   const handleSubmit = async (values: DepartmentFormValues) => {
     if (editingDepartment) {
-      await updateDepartment(editingDepartment.id, values.name)
+      await updateDepartment(editingDepartment.id, values.name, values.headId)
     } else {
-      await createDepartment(values.name)
+      await createDepartment(values.name, values.headId)
     }
     refresh()
   }
