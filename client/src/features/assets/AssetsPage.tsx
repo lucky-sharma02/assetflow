@@ -66,6 +66,7 @@ export function AssetsPage() {
       categoryId: values.categoryId,
       departmentId: values.departmentId ?? undefined,
       condition: values.condition,
+      isBookable: values.isBookable,
       serialNumber: values.serialNumber || undefined,
       location: values.location || undefined,
       notes: values.notes || undefined,

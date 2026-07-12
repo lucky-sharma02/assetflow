@@ -6,6 +6,7 @@ export const registerAssetFormSchema = z.object({
   categoryId: z.string().min(1, "Category is required"),
   departmentId: z.string().nullable().optional(),
   condition: z.enum(ASSET_CONDITIONS).optional(),
+  isBookable: z.boolean().optional(),
   serialNumber: z.string().trim().max(120).optional().or(z.literal("")),
   location: z.string().trim().max(200).optional().or(z.literal("")),
   notes: z.string().trim().max(2000).optional().or(z.literal("")),

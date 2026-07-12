@@ -71,6 +71,7 @@ export async function listAssets(filters: AssetQueryInput = {}) {
     departmentId: filters.departmentId,
     status: filters.status,
     condition: filters.condition,
+    isBookable: filters.isBookable,
   };
 
   if (filters.search) {
@@ -111,6 +112,9 @@ export async function registerAsset(input: RegisterAssetInput) {
       categoryId: input.categoryId,
       departmentId: input.departmentId,
       condition: input.condition ?? "GOOD",
+      // Opt-in, not retroactive: assets are non-bookable by default (#19) —
+      // an Admin/Asset Manager must explicitly flag a resource as bookable.
+      isBookable: input.isBookable ?? false,
       serialNumber: input.serialNumber,
       purchaseDate: input.purchaseDate,
       purchaseCost: input.purchaseCost,

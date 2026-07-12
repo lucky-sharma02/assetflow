@@ -10,6 +10,7 @@ export interface Asset {
   name: string
   status: AssetStatus
   condition: AssetCondition
+  isBookable: boolean
   serialNumber: string | null
   purchaseDate: string | null
   purchaseCost: string | null
@@ -88,4 +89,5 @@ export interface AssetFilters {
   departmentId?: string
   status?: AssetStatus
   condition?: AssetCondition
+  isBookable?: boolean
 }

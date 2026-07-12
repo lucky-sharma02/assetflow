@@ -2,6 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useEffect, useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -46,12 +47,18 @@ export function AssetFormDialog({ open, onOpenChange, onSubmit }: AssetFormDialo
     formState: { errors, isSubmitting },
   } = useForm<RegisterAssetFormValues>({
     resolver: zodResolver(registerAssetFormSchema),
-    defaultValues: { name: "", categoryId: "", departmentId: null, condition: "GOOD" },
+    defaultValues: {
+      name: "",
+      categoryId: "",
+      departmentId: null,
+      condition: "GOOD",
+      isBookable: false,
+    },
   })
 
   useEffect(() => {
     if (!open) return
-    reset({ name: "", categoryId: "", departmentId: null, condition: "GOOD" })
+    reset({ name: "", categoryId: "", departmentId: null, condition: "GOOD", isBookable: false })
     setFormError(null)
     listCategories()
       .then(setCategories)
@@ -160,6 +167,21 @@ export function AssetFormDialog({ open, onOpenChange, onSubmit }: AssetFormDialo
                 </Select>
               )}
             />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Controller
+              control={control}
+              name="isBookable"
+              render={({ field }) => (
+                <Checkbox
+                  id="asset-is-bookable"
+                  checked={field.value ?? false}
+                  onCheckedChange={(checked) => field.onChange(checked === true)}
+                />
+              )}
+            />
+            <Label htmlFor="asset-is-bookable">Bookable (appears in the resource booking flow)</Label>
           </div>
 
           <div className="flex flex-col gap-1.5">

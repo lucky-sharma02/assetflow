@@ -28,4 +28,9 @@ export const assetColumns: ColumnDef<Asset>[] = [
   },
   { accessorKey: "status", header: "Status" },
   { accessorKey: "condition", header: "Condition" },
+  {
+    id: "isBookable",
+    header: "Bookable",
+    cell: ({ row }) => (row.original.isBookable ? "Yes" : "No"),
+  },
 ]
