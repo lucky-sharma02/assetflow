@@ -28,6 +28,9 @@ function App() {
           <Link to="/departments" className="text-sm underline underline-offset-4">
             Manage departments
           </Link>
+          <Link to="/categories" className="text-sm underline underline-offset-4">
+            Manage asset categories
+          </Link>
           <Button variant="outline" onClick={() => logout()}>
             Log out
           </Button>
