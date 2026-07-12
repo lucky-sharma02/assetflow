@@ -6,6 +6,7 @@ import { LoginPage } from "./features/auth/LoginPage.tsx"
 import { SignupPage } from "./features/auth/SignupPage.tsx"
 import { CategoriesPage } from "./features/categories/CategoriesPage.tsx"
 import { DepartmentsPage } from "./features/departments/DepartmentsPage.tsx"
+import { EmployeeDirectoryPage } from "./features/users/EmployeeDirectoryPage.tsx"
 import "./index.css"
 import { AuthProvider } from "./lib/auth.tsx"
 import { GuestRoute } from "./routes/GuestRoute.tsx"
@@ -24,6 +25,7 @@ createRoot(document.getElementById("root")!).render(
             <Route path="/" element={<App />} />
             <Route path="/departments" element={<DepartmentsPage />} />
             <Route path="/categories" element={<CategoriesPage />} />
+            <Route path="/employees" element={<EmployeeDirectoryPage />} />
           </Route>
         </Routes>
       </AuthProvider>
