@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { AppError } from "../middleware/errorHandler";
-import type { CreateAuditCycleInput } from "../validation/audit";
+import type { CreateAuditCycleInput, RecordAuditResultInput } from "../validation/audit";
 
 const userSummary = { select: { id: true, name: true, email: true } };
 const departmentSummary = { select: { id: true, name: true } };
@@ -92,5 +92,80 @@ export async function createCycle(createdById: string, input: CreateAuditCycleIn
       where: { id: cycle.id },
       include: cycleInclude,
     });
+  });
+}
+
+export async function listPendingItemsForAuditor(auditorId: string) {
+  return prisma.auditRecord.findMany({
+    where: {
+      verifiedAt: null,
+      auditCycle: { assignments: { some: { auditorId } } },
+    },
+    include: {
+      asset: { select: { id: true, assetTag: true, name: true, status: true, condition: true } },
+      auditCycle: { select: { id: true, name: true, endDate: true } },
+    },
+    orderBy: { createdAt: "asc" },
+  });
+}
+
+// Ownership-based authorization, not role-based: any authenticated user
+// can call this route (see routes/audits.ts), and it's this function --
+// not requireRole -- that decides whether the request is allowed, by
+// checking for a real AuditAssignment row linking verifiedById to THIS
+// specific auditCycleId. Being an auditor on some other cycle, or being
+// Admin, is not sufficient -- the acceptance criteria names no Admin
+// override, so none is added.
+export async function recordResult(
+  auditCycleId: string,
+  itemId: string,
+  verifiedById: string,
+  input: RecordAuditResultInput
+) {
+  const record = await prisma.auditRecord.findUnique({
+    where: { id: itemId },
+    include: { asset: { select: { status: true, condition: true } } },
+  });
+
+  if (!record || record.auditCycleId !== auditCycleId) {
+    throw new AppError("Audit item not found", 404);
+  }
+
+  // Verifying is a one-shot action -- an already-verified item is not
+  // silently overwritten. If a correction is genuinely needed later,
+  // that's a distinct "amend a verified record" feature, not implied by
+  // this issue's acceptance criteria.
+  if (record.verifiedAt) {
+    throw new AppError("This audit item has already been verified", 409);
+  }
+
+  const assignment = await prisma.auditAssignment.findFirst({
+    where: { auditCycleId, auditorId: verifiedById },
+  });
+  if (!assignment) {
+    throw new AppError("You are not assigned to this audit cycle", 403);
+  }
+
+  // Server-derived, not client-supplied: a client can't be trusted to
+  // self-report whether its own finding is a discrepancy. Compares the
+  // submitted foundStatus/foundCondition against the asset's actual
+  // current status/condition at verification time.
+  const isDiscrepant =
+    input.foundStatus !== record.asset.status || input.foundCondition !== record.asset.condition;
+
+  return prisma.auditRecord.update({
+    where: { id: itemId },
+    data: {
+      foundStatus: input.foundStatus,
+      foundCondition: input.foundCondition,
+      verifiedById,
+      verifiedAt: new Date(),
+      isDiscrepant,
+      discrepancyNotes: input.discrepancyNotes,
+    },
+    include: {
+      verifiedBy: userSummary,
+      asset: { select: { id: true, assetTag: true, name: true } },
+    },
   });
 }

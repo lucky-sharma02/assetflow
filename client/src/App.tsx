@@ -58,6 +58,9 @@ function App() {
           <Link to="/audits" className="text-sm underline underline-offset-4">
             Audit cycles
           </Link>
+          <Link to="/audits/my-items" className="text-sm underline underline-offset-4">
+            My audit items
+          </Link>
           <Button variant="outline" onClick={() => logout()}>
             Log out
           </Button>
