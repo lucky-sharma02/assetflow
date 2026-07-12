@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
+import { MulterError } from "multer";
 import { ZodError } from "zod";
 
 export class AppError extends Error {
@@ -22,6 +23,10 @@ export function errorHandler(
     return res
       .status(err.statusCode)
       .json({ error: err.message, ...(err.details ? { details: err.details } : {}) });
+  }
+
+  if (err instanceof MulterError) {
+    return res.status(400).json({ error: err.message });
   }
 
   if (err instanceof ZodError) {

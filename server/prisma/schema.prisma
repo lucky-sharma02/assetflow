@@ -223,6 +223,7 @@ model MaintenanceRequest {
   id               String            @id @default(cuid())
   status           MaintenanceStatus @default(REQUESTED)
   issueDescription String
+  photoUrl         String?
   cost             Decimal?          @db.Decimal(12, 2)
   notes            String?
   requestedAt      DateTime          @default(now())
