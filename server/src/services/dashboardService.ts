@@ -1,6 +1,11 @@
 import { prisma } from "../lib/prisma";
 
-const ASSET_STATUSES = ["AVAILABLE", "ALLOCATED", "UNDER_MAINTENANCE", "RETIRED"] as const;
+// LOST was missing here (see validation/asset.ts's #34 fix note for the
+// full story) -- caused a real, visible bug: assets.byStatus silently
+// dropped LOST rows while assets.total (computed separately via
+// groupBy()'s own row count) still included them, so the breakdown summed
+// to less than the total on the dashboard.
+const ASSET_STATUSES = ["AVAILABLE", "ALLOCATED", "UNDER_MAINTENANCE", "RETIRED", "LOST"] as const;
 
 export async function getDashboardSummary() {
   const now = new Date();

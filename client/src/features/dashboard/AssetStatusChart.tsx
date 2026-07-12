@@ -14,6 +14,7 @@ const STATUS_LABELS: Record<string, string> = {
   ALLOCATED: "Allocated",
   UNDER_MAINTENANCE: "Under maintenance",
   RETIRED: "Retired",
+  LOST: "Lost",
 }
 
 // Validated categorical palette (dataviz skill default), fixed order
@@ -21,11 +22,19 @@ const STATUS_LABELS: Record<string, string> = {
 // a status count is zero. See scripts/validate_palette.js: light-mode
 // worst adjacent CVD ΔE 24.2 (PASS), dark-mode 10.3 (floor-band WARN,
 // mitigated here by the direct count labels on every bar).
+//
+// 5th slot (violet) added in #34: this chart was still stuck at 4 slots
+// even though AssetStatus gained LOST back in #27 — #31's
+// AssetUtilizationChart.tsx already extended to 5 slots for the reports
+// page, but this dashboard chart never got the same fix, so a LOST asset
+// would have silently rendered in slot 1's color, identical to AVAILABLE.
+// Reuses #31's exact validated violet, not a newly-invented color.
 const SLOT_VARS = [
   "--asset-status-slot-1",
   "--asset-status-slot-2",
   "--asset-status-slot-3",
   "--asset-status-slot-4",
+  "--asset-status-slot-5",
 ]
 
 interface AssetStatusChartProps {
@@ -47,12 +56,14 @@ export function AssetStatusChart({ data }: AssetStatusChartProps) {
           --asset-status-slot-2: #1baf7a;
           --asset-status-slot-3: #eda100;
           --asset-status-slot-4: #008300;
+          --asset-status-slot-5: #4a3aa7;
         }
         .dark .asset-status-chart {
           --asset-status-slot-1: #3987e5;
           --asset-status-slot-2: #199e70;
           --asset-status-slot-3: #c98500;
           --asset-status-slot-4: #008300;
+          --asset-status-slot-5: #9085e9;
         }
       `}</style>
       <ResponsiveContainer width="100%" height="100%">
