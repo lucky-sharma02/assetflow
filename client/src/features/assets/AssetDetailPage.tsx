@@ -10,8 +10,10 @@ import {
 import { Button } from "@/components/ui/button"
 import { AllocateDialog } from "@/features/allocations/AllocateDialog"
 import { allocateAsset } from "@/features/allocations/api"
+import { MaintenanceRequestFormDialog } from "@/features/maintenance/MaintenanceRequestFormDialog"
 import { RequestTransferDialog } from "@/features/transfers/RequestTransferDialog"
 import { createTransfer } from "@/features/transfers/api"
+import { API_URL } from "@/lib/api"
 import { useAuth } from "@/lib/auth"
 import { getAsset } from "./api"
 import type { AssetDetail } from "./types"
@@ -41,6 +43,7 @@ export function AssetDetailPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [transferDialogOpen, setTransferDialogOpen] = useState(false)
+  const [maintenanceDialogOpen, setMaintenanceDialogOpen] = useState(false)
 
   const refresh = () => {
     if (!id) return
@@ -92,14 +95,19 @@ export function AssetDetailPage() {
               {asset.condition}
             </CardDescription>
           </div>
-          {canAllocate && asset.status === "AVAILABLE" && (
-            <Button onClick={() => setDialogOpen(true)}>Allocate</Button>
-          )}
-          {asset.status === "ALLOCATED" && (
-            <Button variant="outline" onClick={() => setTransferDialogOpen(true)}>
-              Request transfer
+          <div className="flex gap-2">
+            {canAllocate && asset.status === "AVAILABLE" && (
+              <Button onClick={() => setDialogOpen(true)}>Allocate</Button>
+            )}
+            {asset.status === "ALLOCATED" && (
+              <Button variant="outline" onClick={() => setTransferDialogOpen(true)}>
+                Request transfer
+              </Button>
+            )}
+            <Button variant="outline" onClick={() => setMaintenanceDialogOpen(true)}>
+              Report an issue
             </Button>
-          )}
+          </div>
         </CardHeader>
         <CardContent className="flex flex-col gap-1 text-sm">
           {asset.serialNumber && <p>Serial number: {asset.serialNumber}</p>}
@@ -144,6 +152,21 @@ export function AssetDetailPage() {
             {asset.maintenanceRequests.map((m) => (
               <li key={m.id}>
                 {m.status} — {m.issueDescription}
+                {m.photoUrl && (
+                  <>
+                    {" "}
+                    (
+                    <a
+                      href={`${API_URL}${m.photoUrl}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="underline underline-offset-4"
+                    >
+                      photo
+                    </a>
+                    )
+                  </>
+                )}
               </li>
             ))}
           </Section>
@@ -172,6 +195,15 @@ export function AssetDetailPage() {
         currentHolderId={currentHolderId}
         onRequest={handleRequestTransfer}
       />
+
+      {id && (
+        <MaintenanceRequestFormDialog
+          open={maintenanceDialogOpen}
+          onOpenChange={setMaintenanceDialogOpen}
+          assetId={id}
+          onCreated={refresh}
+        />
+      )}
     </div>
   )
 }

@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000"
+export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000"
 
 export class ApiError extends Error {
   status: number
@@ -12,10 +12,17 @@ export class ApiError extends Error {
 }
 
 export async function apiFetch(path: string, init?: RequestInit) {
+  // FormData bodies (file uploads) must NOT get a manual Content-Type —
+  // the browser sets multipart/form-data with the correct boundary itself
+  // only when the header is left unset.
+  const isFormData = init?.body instanceof FormData
   const res = await fetch(`${API_URL}${path}`, {
     credentials: "include",
-    headers: { "Content-Type": "application/json", ...init?.headers },
     ...init,
+    headers: {
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
+      ...init?.headers,
+    },
   })
 
   if (!res.ok) {

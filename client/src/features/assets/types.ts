@@ -62,6 +62,7 @@ export interface AssetMaintenanceRequest {
   status: string
   requestedAt: string
   issueDescription: string
+  photoUrl: string | null
   requestedBy: UserSummary
 }
 
