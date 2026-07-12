@@ -37,6 +37,9 @@ function App() {
           <Link to="/bookings" className="text-sm underline underline-offset-4">
             Book a resource
           </Link>
+          <Link to="/transfers" className="text-sm underline underline-offset-4">
+            Transfer requests
+          </Link>
           {(user?.role === "ADMIN" || user?.role === "ASSET_MANAGER") && (
             <Link to="/employees" className="text-sm underline underline-offset-4">
               Employee directory
