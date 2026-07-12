@@ -3,6 +3,7 @@ import cors from "cors";
 import express from "express";
 import { errorHandler } from "./middleware/errorHandler";
 import { authRouter } from "./routes/auth";
+import { departmentsRouter } from "./routes/departments";
 import { healthRouter } from "./routes/health";
 
 export function createApp() {
@@ -19,6 +20,7 @@ export function createApp() {
 
   app.use("/api/health", healthRouter);
   app.use("/api/auth", authRouter);
+  app.use("/api/departments", departmentsRouter);
 
   app.use(errorHandler);
 

@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -24,6 +25,9 @@ function App() {
           <p className="text-sm">
             Signed in as <span className="font-medium">{user?.name}</span> ({user?.role})
           </p>
+          <Link to="/departments" className="text-sm underline underline-offset-4">
+            Manage departments
+          </Link>
           <Button variant="outline" onClick={() => logout()}>
             Log out
           </Button>
