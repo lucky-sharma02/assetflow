@@ -16,6 +16,7 @@ export function ActivityLogPage() {
   const [hasMore, setHasMore] = useState(true)
 
   useEffect(() => {
+    setError(null)
     listActivityLogs({ limit: PAGE_SIZE, offset: 0 })
       .then((data) => {
         setLogs(data)
@@ -27,6 +28,7 @@ export function ActivityLogPage() {
 
   const loadMore = () => {
     setIsLoadingMore(true)
+    setError(null)
     listActivityLogs({ limit: PAGE_SIZE, offset: logs.length })
       .then((data) => {
         setLogs((prev) => [...prev, ...data])

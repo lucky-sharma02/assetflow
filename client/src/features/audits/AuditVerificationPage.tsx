@@ -16,6 +16,7 @@ export function AuditVerificationPage() {
 
   const refresh = () => {
     setIsLoading(true)
+    setError(null)
     listMyPendingItems()
       .then(setItems)
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load"))

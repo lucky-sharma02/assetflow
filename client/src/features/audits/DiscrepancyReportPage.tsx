@@ -22,6 +22,7 @@ export function DiscrepancyReportPage() {
   useEffect(() => {
     if (!cycleId) return
     setIsLoading(true)
+    setError(null)
     getDiscrepancyReport(cycleId)
       .then(setItems)
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load"))

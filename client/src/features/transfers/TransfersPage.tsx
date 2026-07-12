@@ -22,6 +22,7 @@ export function TransfersPage() {
 
   const refresh = () => {
     setIsLoading(true)
+    setError(null)
     listTransfers()
       .then(setTransfers)
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load"))

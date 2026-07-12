@@ -26,6 +26,7 @@ export function DepartmentsPage() {
 
   const refresh = () => {
     setIsLoading(true)
+    setLoadError(null)
     listDepartments()
       .then(setDepartments)
       .catch((err) => setLoadError(err instanceof Error ? err.message : "Failed to load"))

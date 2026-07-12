@@ -31,6 +31,7 @@ export function ReportsPage() {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
+    setError(null)
     Promise.all([
       getAssetUtilizationReport(),
       getMaintenanceFrequencyReport(),

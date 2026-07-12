@@ -60,6 +60,7 @@ export function AuditCyclesPage() {
 
   const refresh = () => {
     setIsLoading(true)
+    setError(null)
     listAuditCycles()
       .then(setCycles)
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load"))

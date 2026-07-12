@@ -53,6 +53,7 @@ export function AssetsPage() {
 
   const refresh = () => {
     setIsLoading(true)
+    setError(null)
     listAssets(filters)
       .then(setAssets)
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load"))

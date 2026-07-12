@@ -56,6 +56,7 @@ export function AssetDetailPage() {
   const refresh = () => {
     if (!id) return
     setIsLoading(true)
+    setError(null)
     getAsset(id)
       .then(setAsset)
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load"))
