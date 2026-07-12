@@ -19,3 +19,24 @@ export async function raiseMaintenanceRequest(
   })
   return data.maintenanceRequest
 }
+
+export async function approveMaintenanceRequest(id: string): Promise<MaintenanceRequest> {
+  const data = await apiFetch(`/api/maintenance/${id}/approve`, { method: "PATCH" })
+  return data.maintenanceRequest
+}
+
+export async function rejectMaintenanceRequest(
+  id: string,
+  notes?: string
+): Promise<MaintenanceRequest> {
+  const data = await apiFetch(`/api/maintenance/${id}/reject`, {
+    method: "PATCH",
+    body: JSON.stringify({ notes }),
+  })
+  return data.maintenanceRequest
+}
+
+export async function resolveMaintenanceRequest(id: string): Promise<MaintenanceRequest> {
+  const data = await apiFetch(`/api/maintenance/${id}/resolve`, { method: "PATCH" })
+  return data.maintenanceRequest
+}
