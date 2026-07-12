@@ -4,6 +4,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom"
 import App from "./App.tsx"
 import { LoginPage } from "./features/auth/LoginPage.tsx"
 import { SignupPage } from "./features/auth/SignupPage.tsx"
+import { ActivityLogPage } from "./features/activity-log/ActivityLogPage.tsx"
 import { AssetDetailPage } from "./features/assets/AssetDetailPage.tsx"
 import { AssetsPage } from "./features/assets/AssetsPage.tsx"
 import { OverdueAllocationsPage } from "./features/allocations/OverdueAllocationsPage.tsx"
@@ -49,6 +50,7 @@ createRoot(document.getElementById("root")!).render(
             />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/reports" element={<ReportsPage />} />
+            <Route path="/activity-log" element={<ActivityLogPage />} />
           </Route>
         </Routes>
       </AuthProvider>

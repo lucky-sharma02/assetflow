@@ -41,7 +41,7 @@ maintenanceRouter.patch("/:id/reject", requireRole("ASSET_MANAGER"), async (req,
 
 maintenanceRouter.patch("/:id/resolve", requireRole("ASSET_MANAGER"), async (req, res, next) => {
   try {
-    const maintenanceRequest = await resolve(req.params.id);
+    const maintenanceRequest = await resolve(req.params.id, req.user!.sub);
     res.json({ maintenanceRequest });
   } catch (err) {
     next(err);
