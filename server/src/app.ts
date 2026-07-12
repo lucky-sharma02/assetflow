@@ -2,6 +2,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
 import { errorHandler } from "./middleware/errorHandler";
+import { assetsRouter } from "./routes/assets";
 import { authRouter } from "./routes/auth";
 import { categoriesRouter } from "./routes/categories";
 import { departmentsRouter } from "./routes/departments";
@@ -25,6 +26,7 @@ export function createApp() {
   app.use("/api/departments", departmentsRouter);
   app.use("/api/categories", categoriesRouter);
   app.use("/api/users", usersRouter);
+  app.use("/api/assets", assetsRouter);
 
   app.use(errorHandler);
 

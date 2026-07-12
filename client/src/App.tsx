@@ -31,6 +31,9 @@ function App() {
           <Link to="/categories" className="text-sm underline underline-offset-4">
             Manage asset categories
           </Link>
+          <Link to="/assets" className="text-sm underline underline-offset-4">
+            View assets
+          </Link>
           {(user?.role === "ADMIN" || user?.role === "ASSET_MANAGER") && (
             <Link to="/employees" className="text-sm underline underline-offset-4">
               Employee directory
