@@ -9,6 +9,7 @@ import { auditsRouter } from "./routes/audits";
 import { authRouter } from "./routes/auth";
 import { bookingsRouter } from "./routes/bookings";
 import { categoriesRouter } from "./routes/categories";
+import { dashboardRouter } from "./routes/dashboard";
 import { departmentsRouter } from "./routes/departments";
 import { healthRouter } from "./routes/health";
 import { maintenanceRouter } from "./routes/maintenance";
@@ -42,6 +43,7 @@ export function createApp() {
   app.use("/api/transfers", transfersRouter);
   app.use("/api/maintenance", maintenanceRouter);
   app.use("/api/audits", auditsRouter);
+  app.use("/api/dashboard", dashboardRouter);
 
   app.use(errorHandler);
 
