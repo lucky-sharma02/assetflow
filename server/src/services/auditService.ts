@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { AppError } from "../middleware/errorHandler";
+import { NotificationType, notify } from "./notificationService";
 import type {
   CloseCycleInput,
   CreateAuditCycleInput,
@@ -129,8 +130,8 @@ export async function recordResult(
   const record = await prisma.auditRecord.findUnique({
     where: { id: itemId },
     include: {
-      asset: { select: { status: true, condition: true } },
-      auditCycle: { select: { status: true } },
+      asset: { select: { id: true, name: true, assetTag: true, status: true, condition: true } },
+      auditCycle: { select: { status: true, createdById: true } },
     },
   });
 
@@ -167,20 +168,51 @@ export async function recordResult(
   const isDiscrepant =
     input.foundStatus !== record.asset.status || input.foundCondition !== record.asset.condition;
 
-  return prisma.auditRecord.update({
-    where: { id: itemId },
-    data: {
-      foundStatus: input.foundStatus,
-      foundCondition: input.foundCondition,
-      verifiedById,
-      verifiedAt: new Date(),
-      isDiscrepant,
-      discrepancyNotes: input.discrepancyNotes,
-    },
-    include: {
-      verifiedBy: userSummary,
-      asset: { select: { id: true, assetTag: true, name: true } },
-    },
+  // TRIGGER-POINT DECISION (#29): a discrepancy is genuinely "found" right
+  // here, the moment isDiscrepant is computed true -- not later, at #27's
+  // closeCycle()/generateDiscrepancyReport(). closeCycle() is a separate,
+  // already-manual human decision about which discrepant items are
+  // confirmed LOST (see its own comment above); using it as the
+  // notification trigger too would (a) delay the notification until
+  // whenever the cycle happens to close, and (b) only fire for the subset
+  // the closer chooses to mark lost, missing every other discrepancy.
+  // Notify whoever created the audit cycle (per #29's acceptance criteria
+  // wording), since they're the one who'd act on it -- there's no
+  // Admin/Asset-Manager-wide broadcast list to notify instead, and
+  // createdById is the one concrete "relevant party" this data model
+  // actually has.
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.auditRecord.update({
+      where: { id: itemId },
+      data: {
+        foundStatus: input.foundStatus,
+        foundCondition: input.foundCondition,
+        verifiedById,
+        verifiedAt: new Date(),
+        isDiscrepant,
+        discrepancyNotes: input.discrepancyNotes,
+      },
+      include: {
+        verifiedBy: userSummary,
+        asset: { select: { id: true, assetTag: true, name: true } },
+      },
+    });
+
+    if (isDiscrepant) {
+      await notify(
+        record.auditCycle.createdById,
+        {
+          type: NotificationType.AUDIT_DISCREPANCY,
+          title: "Audit discrepancy found",
+          message: `A discrepancy was found for ${record.asset.name} (${record.asset.assetTag}) during audit cycle verification.`,
+          relatedEntityType: "AuditCycle",
+          relatedEntityId: auditCycleId,
+        },
+        tx
+      );
+    }
+
+    return updated;
   });
 }
 

@@ -1,5 +1,6 @@
 import { prisma } from "../lib/prisma";
 import { AppError } from "../middleware/errorHandler";
+import { NotificationType, notify } from "./notificationService";
 import type {
   CreateMaintenanceRequestInput,
   RejectMaintenanceRequestInput,
@@ -50,18 +51,38 @@ export async function raise(
 // treating a raw request as authoritative.
 export async function approve(maintenanceRequestId: string, approvedById: string) {
   const maintenanceRequest = await getRequestedMaintenanceRequest(maintenanceRequestId);
+  const asset = await prisma.asset.findUniqueOrThrow({ where: { id: maintenanceRequest.assetId } });
 
-  const [updated] = await prisma.$transaction([
-    prisma.maintenanceRequest.update({
-      where: { id: maintenanceRequestId },
-      data: { status: "APPROVED", approvedAt: new Date(), approvedById },
-      include: { requestedBy: requestedBySummary },
-    }),
-    prisma.asset.update({
-      where: { id: maintenanceRequest.assetId },
-      data: { status: "UNDER_MAINTENANCE" },
-    }),
-  ]);
+  // Converted from array-form to callback-form $transaction (#29), same
+  // reasoning as allocationService.allocateAsset -- notify() needs the tx
+  // client to be atomic with the status writes.
+  const [updated] = await prisma.$transaction(async (tx) => {
+    const result = await Promise.all([
+      tx.maintenanceRequest.update({
+        where: { id: maintenanceRequestId },
+        data: { status: "APPROVED", approvedAt: new Date(), approvedById },
+        include: { requestedBy: requestedBySummary },
+      }),
+      tx.asset.update({
+        where: { id: maintenanceRequest.assetId },
+        data: { status: "UNDER_MAINTENANCE" },
+      }),
+    ]);
+
+    await notify(
+      maintenanceRequest.requestedById,
+      {
+        type: NotificationType.MAINTENANCE_APPROVED,
+        title: "Maintenance request approved",
+        message: `Your maintenance request for ${asset.name} (${asset.assetTag}) was approved.`,
+        relatedEntityType: "MaintenanceRequest",
+        relatedEntityId: maintenanceRequestId,
+      },
+      tx
+    );
+
+    return result;
+  });
 
   return updated;
 }
@@ -76,16 +97,35 @@ export async function reject(
   input: RejectMaintenanceRequestInput
 ) {
   const maintenanceRequest = await getRequestedMaintenanceRequest(maintenanceRequestId);
+  const asset = await prisma.asset.findUniqueOrThrow({ where: { id: maintenanceRequest.assetId } });
 
-  return prisma.maintenanceRequest.update({
-    where: { id: maintenanceRequestId },
-    data: {
-      status: "REJECTED",
-      approvedAt: new Date(),
-      approvedById,
-      notes: input.notes ?? maintenanceRequest.notes,
-    },
-    include: { requestedBy: requestedBySummary },
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.maintenanceRequest.update({
+      where: { id: maintenanceRequestId },
+      data: {
+        status: "REJECTED",
+        approvedAt: new Date(),
+        approvedById,
+        notes: input.notes ?? maintenanceRequest.notes,
+      },
+      include: { requestedBy: requestedBySummary },
+    });
+
+    await notify(
+      maintenanceRequest.requestedById,
+      {
+        type: NotificationType.MAINTENANCE_REJECTED,
+        title: "Maintenance request rejected",
+        message: `Your maintenance request for ${asset.name} (${asset.assetTag}) was rejected.${
+          input.notes ? ` Reason: ${input.notes}` : ""
+        }`,
+        relatedEntityType: "MaintenanceRequest",
+        relatedEntityId: maintenanceRequestId,
+      },
+      tx
+    );
+
+    return updated;
   });
 }
 

@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { AppError } from "../middleware/errorHandler";
+import { NotificationType, notify } from "./notificationService";
 import type {
   AllocationQueryInput,
   CreateAllocationInput,
@@ -80,8 +81,13 @@ export async function allocateAsset(input: CreateAllocationInput, allocatedById:
 
   await assertUserExists(input.holderId);
 
-  const [allocation] = await prisma.$transaction([
-    prisma.allocation.create({
+  // Converted from array-form $transaction to callback-form (#29) so the
+  // "asset assigned" notification can be created with the transaction's own
+  // tx client -- array-form $transaction can't accept a dynamically-built
+  // query like that, only pre-built PrismaPromises against the top-level
+  // client.
+  const allocation = await prisma.$transaction(async (tx) => {
+    const created = await tx.allocation.create({
       data: {
         assetId: input.assetId,
         holderId: input.holderId,
@@ -91,12 +97,27 @@ export async function allocateAsset(input: CreateAllocationInput, allocatedById:
         notes: input.notes,
       },
       include: allocationInclude,
-    }),
-    prisma.asset.update({
+    });
+
+    await tx.asset.update({
       where: { id: input.assetId },
       data: { status: "ALLOCATED" },
-    }),
-  ]);
+    });
+
+    await notify(
+      input.holderId,
+      {
+        type: NotificationType.ASSET_ASSIGNED,
+        title: "Asset assigned to you",
+        message: `${asset.name} (${asset.assetTag}) has been assigned to you.`,
+        relatedEntityType: "Asset",
+        relatedEntityId: asset.id,
+      },
+      tx
+    );
+
+    return created;
+  });
 
   return withOverdueFlag(allocation);
 }
