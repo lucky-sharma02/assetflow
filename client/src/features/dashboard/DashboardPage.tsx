@@ -47,7 +47,7 @@ export function DashboardPage() {
   }, [])
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-6 p-8">
+    <div className="mx-auto flex max-w-4xl flex-col gap-6 p-4 sm:p-8">
       <div>
         <h1 className="text-2xl font-semibold">Dashboard</h1>
         <Link to="/" className="text-sm text-muted-foreground underline underline-offset-4">
