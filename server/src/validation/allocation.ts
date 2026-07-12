@@ -24,6 +24,7 @@ export const allocationQuerySchema = z.object({
   assetId: z.string().min(1).optional(),
   holderId: z.string().min(1).optional(),
   status: z.enum(ALLOCATION_STATUSES).optional(),
+  overdue: z.coerce.boolean().optional(),
 });
 
 export type AllocationQueryInput = z.infer<typeof allocationQuerySchema>;

@@ -22,16 +22,31 @@ async function assertUserExists(userId: string) {
   }
 }
 
+// "Overdue" is a derived state, not a stored one -- AllocationStatus
+// only has ACTIVE/RETURNED (see schema.prisma). An allocation is
+// overdue if it's still ACTIVE and its dueDate has passed; allocations
+// without a dueDate are never overdue.
+function withOverdueFlag<T extends { status: string; dueDate: Date | null }>(allocation: T) {
+  return {
+    ...allocation,
+    isOverdue:
+      allocation.status === "ACTIVE" && allocation.dueDate !== null && allocation.dueDate < new Date(),
+  };
+}
+
 export async function listAllocations(filters: AllocationQueryInput = {}) {
-  return prisma.allocation.findMany({
+  const allocations = await prisma.allocation.findMany({
     where: {
       assetId: filters.assetId,
       holderId: filters.holderId,
       status: filters.status,
+      ...(filters.overdue ? { status: "ACTIVE", dueDate: { lt: new Date() } } : {}),
     },
     include: allocationInclude,
     orderBy: { allocatedAt: "desc" },
   });
+
+  return allocations.map(withOverdueFlag);
 }
 
 // BR-006: an asset that's already allocated cannot be re-allocated —
@@ -83,7 +98,7 @@ export async function allocateAsset(input: CreateAllocationInput, allocatedById:
     }),
   ]);
 
-  return allocation;
+  return withOverdueFlag(allocation);
 }
 
 // Asset return + condition check-in: closes out the ACTIVE allocation,
@@ -120,5 +135,5 @@ export async function returnAllocation(allocationId: string, input: ReturnAlloca
     }),
   ]);
 
-  return updatedAllocation;
+  return withOverdueFlag(updatedAllocation);
 }

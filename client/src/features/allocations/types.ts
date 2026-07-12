@@ -18,6 +18,7 @@ export interface Allocation {
   asset: { id: string; assetTag: string; name: string }
   holder: UserSummary
   allocatedBy: UserSummary
+  isOverdue: boolean
 }
 
 export interface AllocationConflictDetails {
