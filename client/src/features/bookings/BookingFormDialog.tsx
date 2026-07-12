@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { toLocalInputValue } from "./datetime"
 import { bookingFormSchema, type BookingFormValues } from "./schemas"
 
 interface BookingFormDialogProps {
@@ -19,12 +20,6 @@ interface BookingFormDialogProps {
   assetId: string
   initialRange: { start: string; end: string } | null
   onSubmit: (values: BookingFormValues) => Promise<void>
-}
-
-function toLocalInputValue(iso: string): string {
-  const d = new Date(iso)
-  const pad = (n: number) => String(n).padStart(2, "0")
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
 export function BookingFormDialog({

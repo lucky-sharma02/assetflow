@@ -14,6 +14,18 @@ export const createBookingSchema = z
 
 export type CreateBookingInput = z.infer<typeof createBookingSchema>;
 
+export const rescheduleBookingSchema = z
+  .object({
+    startTime: z.coerce.date(),
+    endTime: z.coerce.date(),
+  })
+  .refine((data) => data.endTime > data.startTime, {
+    message: "End time must be after start time",
+    path: ["endTime"],
+  });
+
+export type RescheduleBookingInput = z.infer<typeof rescheduleBookingSchema>;
+
 export const bookingQuerySchema = z.object({
   assetId: z.string().min(1, "Asset is required"),
 });
