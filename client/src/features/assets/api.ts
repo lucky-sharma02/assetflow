@@ -6,6 +6,7 @@ export interface RegisterAssetInput {
   categoryId: string
   departmentId?: string
   condition?: AssetCondition
+  isBookable?: boolean
   serialNumber?: string
   purchaseDate?: string
   purchaseCost?: number
@@ -20,6 +21,7 @@ export async function listAssets(filters: AssetFilters = {}): Promise<Asset[]> {
   if (filters.departmentId) params.set("departmentId", filters.departmentId)
   if (filters.status) params.set("status", filters.status)
   if (filters.condition) params.set("condition", filters.condition)
+  if (filters.isBookable !== undefined) params.set("isBookable", String(filters.isBookable))
 
   const query = params.toString()
   const data = await apiFetch(`/api/assets${query ? `?${query}` : ""}`)

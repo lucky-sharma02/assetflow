@@ -97,6 +97,7 @@ model Asset {
   name         String
   status       AssetStatus    @default(AVAILABLE)
   condition    AssetCondition @default(GOOD)
+  isBookable   Boolean        @default(false)
   serialNumber String?
   purchaseDate DateTime?
   purchaseCost Decimal?       @db.Decimal(12, 2)

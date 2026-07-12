@@ -11,6 +11,10 @@
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.9",
+    "@fullcalendar/core": "^6.1.21",
+    "@fullcalendar/interaction": "^6.1.21",
+    "@fullcalendar/react": "^6.1.21",
+    "@fullcalendar/timegrid": "^6.1.21",
     "@hookform/resolvers": "^5.4.0",
     "@tailwindcss/vite": "^4.3.2",
     "@tanstack/react-table": "^8.21.3",
