@@ -6,8 +6,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { useAuth } from "@/lib/auth"
 
 function App() {
+  const { user, logout } = useAuth()
+
   return (
     <div className="flex min-h-svh items-center justify-center p-8">
       <Card className="w-full max-w-sm">
@@ -17,8 +20,13 @@ function App() {
             Know what you have. Know who has it. Know its condition — always.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Button>Get started</Button>
+        <CardContent className="flex flex-col gap-4">
+          <p className="text-sm">
+            Signed in as <span className="font-medium">{user?.name}</span> ({user?.role})
+          </p>
+          <Button variant="outline" onClick={() => logout()}>
+            Log out
+          </Button>
         </CardContent>
       </Card>
     </div>
