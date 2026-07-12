@@ -16,6 +16,7 @@ export function EmployeeDirectoryPage() {
 
   const refresh = () => {
     setIsLoading(true)
+    setError(null)
     listUsers()
       .then(setUsers)
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load"))

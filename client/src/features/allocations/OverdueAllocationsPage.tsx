@@ -11,6 +11,7 @@ export function OverdueAllocationsPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    setError(null)
     listOverdueAllocations()
       .then(setAllocations)
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load"))

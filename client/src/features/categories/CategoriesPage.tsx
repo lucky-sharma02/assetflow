@@ -21,6 +21,7 @@ export function CategoriesPage() {
 
   const refresh = () => {
     setIsLoading(true)
+    setLoadError(null)
     listCategories()
       .then(setCategories)
       .catch((err) => setLoadError(err instanceof Error ? err.message : "Failed to load"))

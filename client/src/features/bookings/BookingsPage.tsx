@@ -49,6 +49,7 @@ export function BookingsPage() {
   }, [])
 
   useEffect(() => {
+    setError(null)
     listAssets({ isBookable: true })
       .then((assets) => {
         setBookableAssets(assets)
@@ -59,6 +60,7 @@ export function BookingsPage() {
 
   const refresh = () => {
     if (!selectedAssetId) return
+    setError(null)
     listBookings(selectedAssetId)
       .then(setBookings)
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load bookings"))

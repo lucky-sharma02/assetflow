@@ -40,6 +40,7 @@ export function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
+    setError(null)
     getDashboardSummary()
       .then(setSummary)
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load"))
