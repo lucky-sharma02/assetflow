@@ -1,4 +1,7 @@
 import { Router } from "express";
+import { authenticate } from "../middleware/authenticate";
+import { AppError } from "../middleware/errorHandler";
+import { prisma } from "../lib/prisma";
 import { AUTH_COOKIE_NAME, login, signup } from "../services/authService";
 import { loginSchema, signupSchema } from "../validation/auth";
 
@@ -27,6 +30,19 @@ authRouter.post("/login", async (req, res, next) => {
       maxAge: AUTH_COOKIE_MAX_AGE_MS,
     });
     res.status(200).json({ user });
+  } catch (err) {
+    next(err);
+  }
+});
+
+authRouter.get("/me", authenticate, async (req, res, next) => {
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.user!.sub } });
+    if (!user) {
+      throw new AppError("User not found", 404);
+    }
+    const { passwordHash: _passwordHash, ...safeUser } = user;
+    res.json({ user: safeUser });
   } catch (err) {
     next(err);
   }
