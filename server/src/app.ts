@@ -13,6 +13,7 @@ import { dashboardRouter } from "./routes/dashboard";
 import { departmentsRouter } from "./routes/departments";
 import { healthRouter } from "./routes/health";
 import { maintenanceRouter } from "./routes/maintenance";
+import { reportsRouter } from "./routes/reports";
 import { transfersRouter } from "./routes/transfers";
 import { usersRouter } from "./routes/users";
 
@@ -44,6 +45,7 @@ export function createApp() {
   app.use("/api/maintenance", maintenanceRouter);
   app.use("/api/audits", auditsRouter);
   app.use("/api/dashboard", dashboardRouter);
+  app.use("/api/reports", reportsRouter);
 
   app.use(errorHandler);
 

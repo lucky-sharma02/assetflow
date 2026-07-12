@@ -46,6 +46,11 @@ function App() {
             </Link>
           )}
           {(user?.role === "ADMIN" || user?.role === "ASSET_MANAGER") && (
+            <Link to="/reports" className="text-sm underline underline-offset-4">
+              Reports & analytics
+            </Link>
+          )}
+          {(user?.role === "ADMIN" || user?.role === "ASSET_MANAGER") && (
             <Link to="/employees" className="text-sm underline underline-offset-4">
               Employee directory
             </Link>

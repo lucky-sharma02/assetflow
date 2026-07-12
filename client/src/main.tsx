@@ -14,6 +14,7 @@ import { BookingsPage } from "./features/bookings/BookingsPage.tsx"
 import { CategoriesPage } from "./features/categories/CategoriesPage.tsx"
 import { DashboardPage } from "./features/dashboard/DashboardPage.tsx"
 import { DepartmentsPage } from "./features/departments/DepartmentsPage.tsx"
+import { ReportsPage } from "./features/reports/ReportsPage.tsx"
 import { TransfersPage } from "./features/transfers/TransfersPage.tsx"
 import { EmployeeDirectoryPage } from "./features/users/EmployeeDirectoryPage.tsx"
 import "./index.css"
@@ -47,6 +48,7 @@ createRoot(document.getElementById("root")!).render(
               element={<DiscrepancyReportPage />}
             />
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/reports" element={<ReportsPage />} />
           </Route>
         </Routes>
       </AuthProvider>
