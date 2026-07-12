@@ -1,6 +1,7 @@
 import { Prisma, PrismaClient, type Role } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { AppError } from "../middleware/errorHandler";
+import { NotificationType, notify, notifyReplacingUnread } from "./notificationService";
 import type { CreateBookingInput, RescheduleBookingInput } from "../validation/booking";
 
 const bookedBySummary = { select: { id: true, name: true, email: true } };
@@ -81,12 +82,15 @@ export async function createBooking(bookedById: string, input: CreateBookingInpu
     // Check + insert run inside one transaction so a concurrent request
     // can't slip a conflicting booking in between the check and the write.
     // The Postgres EXCLUDE constraint is the final backstop if even that
-    // isn't enough (e.g. isolation-level edge cases).
+    // isn't enough (e.g. isolation-level edge cases). The "booking
+    // confirmed" notification is created in the same transaction (#29) so
+    // it's atomic with the booking itself -- unlike the reminder below,
+    // this one is core to the booking existing at all.
     const booking = await prisma.$transaction(async (tx) => {
       await assertAssetIsBookable(tx, input.assetId);
       await checkOverlap(input.assetId, input.startTime, input.endTime, undefined, tx);
 
-      return tx.booking.create({
+      const created = await tx.booking.create({
         data: {
           assetId: input.assetId,
           bookedById,
@@ -96,10 +100,28 @@ export async function createBooking(bookedById: string, input: CreateBookingInpu
         },
         include: { bookedBy: bookedBySummary },
       });
+
+      const asset = await tx.asset.findUnique({ where: { id: created.assetId }, select: { name: true } });
+      await notify(
+        bookedById,
+        {
+          type: NotificationType.BOOKING_CONFIRMED,
+          title: "Booking confirmed",
+          message: `Your booking for ${asset?.name ?? "a resource"} is confirmed for ${created.startTime.toISOString()}.`,
+          relatedEntityType: "Booking",
+          relatedEntityId: created.id,
+        },
+        tx
+      );
+
+      return created;
     });
 
-    // Best-effort and outside the transaction on purpose: a failed
-    // reminder write shouldn't roll back a successful booking.
+    // A confirmation notification (above) and this reminder are two
+    // separate things, per #29's design -- both fire on creation. The
+    // reminder itself stays best-effort and OUTSIDE the transaction on
+    // purpose (#21's original rationale, preserved): a failed reminder
+    // write shouldn't roll back a successful booking.
     await createReminderNotification({
       id: booking.id,
       assetId: booking.assetId,
@@ -125,47 +147,39 @@ async function getOwnedBooking(bookingId: string, requestingUserId: string, requ
   return booking;
 }
 
-// SCOPE DECISION (issue #21): the Notification model (from #5) has no
-// scheduledFor/sendAt field and there is no background job runner/cron
-// anywhere in this codebase — true time-delayed "ahead of start time"
-// delivery is out of scope here and belongs to #29/#30 (Notification
-// System). This creates the Notification row EAGERLY at booking-creation/
-// reschedule time instead, with the booking's start time embedded in the
-// message text, so the row exists and is retrievable via the existing
-// polled-REST pattern immediately. This is a placeholder for #29/#30 to
-// upgrade to real scheduled delivery, not final reminder behavior.
+// SCOPE DECISION (issue #21, still true after #29): the Notification model
+// (from #5) has no scheduledFor/sendAt field and there is no background job
+// runner/cron anywhere in this codebase — true time-delayed "ahead of
+// start time" delivery is still out of scope. This creates the
+// Notification row EAGERLY at booking-creation/reschedule time instead,
+// with the booking's start time embedded in the message text, so the row
+// exists and is retrievable via the polled-REST pattern immediately. This
+// remains a placeholder for a future real-scheduling issue to upgrade, not
+// final reminder behavior.
+//
+// #29 refactor: this used to call prisma.notification.create()/deleteMany()
+// directly. It now goes through the shared notifyReplacingUnread() in
+// notificationService.ts — the dedup-on-reschedule behavior itself (delete
+// any existing unread reminder before writing a fresh one) is preserved
+// exactly, just relocated into the shared service as an explicit opt-in
+// variant of notify() rather than being reimplemented here.
 async function createReminderNotification(booking: {
   id: string;
   assetId: string;
   bookedById: string;
   startTime: Date;
 }) {
-  // A reschedule shouldn't leave a stale reminder referencing the old time
-  // sitting in the recipient's list — clear any unread reminder for this
-  // booking before writing the fresh one.
-  await prisma.notification.deleteMany({
-    where: {
-      type: "BOOKING_REMINDER",
-      relatedEntityType: "Booking",
-      relatedEntityId: booking.id,
-      isRead: false,
-    },
-  });
-
   const asset = await prisma.asset.findUnique({
     where: { id: booking.assetId },
     select: { name: true },
   });
 
-  await prisma.notification.create({
-    data: {
-      type: "BOOKING_REMINDER",
-      title: "Upcoming booking reminder",
-      message: `Reminder: your booking for ${asset?.name ?? "a resource"} starts at ${booking.startTime.toISOString()}`,
-      userId: booking.bookedById,
-      relatedEntityType: "Booking",
-      relatedEntityId: booking.id,
-    },
+  await notifyReplacingUnread(booking.bookedById, {
+    type: NotificationType.BOOKING_REMINDER,
+    title: "Upcoming booking reminder",
+    message: `Reminder: your booking for ${asset?.name ?? "a resource"} starts at ${booking.startTime.toISOString()}`,
+    relatedEntityType: "Booking",
+    relatedEntityId: booking.id,
   });
 }
 
@@ -183,11 +197,31 @@ export async function cancelBooking(
   // No overlap re-check needed on cancel: checkOverlap() only matches
   // status: "CONFIRMED" bookings, so flipping status away from CONFIRMED
   // is what frees the slot — nothing else has to happen for the slot to
-  // become bookable again.
-  return prisma.booking.update({
-    where: { id: bookingId },
-    data: { status: "CANCELLED" },
-    include: { bookedBy: bookedBySummary },
+  // become bookable again. The cancellation notification is created in
+  // the same transaction as the status flip (#29) so it's atomic — always
+  // notify the booker themselves, even when an Admin is the one cancelling
+  // on their behalf.
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.booking.update({
+      where: { id: bookingId },
+      data: { status: "CANCELLED" },
+      include: { bookedBy: bookedBySummary },
+    });
+
+    const asset = await tx.asset.findUnique({ where: { id: updated.assetId }, select: { name: true } });
+    await notify(
+      booking.bookedById,
+      {
+        type: NotificationType.BOOKING_CANCELLED,
+        title: "Booking cancelled",
+        message: `Your booking for ${asset?.name ?? "a resource"} starting ${updated.startTime.toISOString()} was cancelled.`,
+        relatedEntityType: "Booking",
+        relatedEntityId: updated.id,
+      },
+      tx
+    );
+
+    return updated;
   });
 }
 

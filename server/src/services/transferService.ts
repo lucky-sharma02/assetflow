@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { AppError } from "../middleware/errorHandler";
+import { NotificationType, notify } from "./notificationService";
 import type { CreateTransferInput, TransferQueryInput } from "../validation/transfer";
 
 const userSummary = { select: { id: true, name: true, email: true } };
@@ -99,20 +100,32 @@ export async function approveTransfer(transferId: string, approvedById: string) 
   const asset = await prisma.asset.findUniqueOrThrow({ where: { id: transfer.assetId } });
   const now = new Date();
 
-  const [, , updatedTransfer] = await prisma.$transaction([
-    prisma.allocation.update({
+  // Converted from array-form to callback-form $transaction (#29), same
+  // reasoning as allocationService/maintenanceService -- notify() needs
+  // the tx client. Notify TWO parties, not one (per #29's "check what
+  // makes sense given transferService's actual fields" guidance): the new
+  // holder (toUser) always, since they're gaining the asset (mirrors
+  // "asset assigned"); and the original requester too, but only if they're
+  // a different person than toUser, since requestedById isn't necessarily
+  // the incoming holder (e.g. a Department Head could request a transfer
+  // on behalf of someone else) and they'd otherwise never learn their
+  // request was acted on.
+  const updatedTransfer = await prisma.$transaction(async (tx) => {
+    await tx.allocation.update({
       where: { id: activeAllocation.id },
       data: { status: "RETURNED", returnedAt: now },
-    }),
-    prisma.allocation.create({
+    });
+
+    await tx.allocation.create({
       data: {
         assetId: transfer.assetId,
         holderId: transfer.toUserId,
         allocatedById: approvedById,
         conditionAtAllocation: asset.condition,
       },
-    }),
-    prisma.transferRequest.update({
+    });
+
+    const updated = await tx.transferRequest.update({
       where: { id: transferId },
       data: {
         status: "COMPLETED",
@@ -121,8 +134,36 @@ export async function approveTransfer(transferId: string, approvedById: string) 
         completedAt: now,
       },
       include: transferInclude,
-    }),
-  ]);
+    });
+
+    await notify(
+      transfer.toUserId,
+      {
+        type: NotificationType.TRANSFER_APPROVED,
+        title: "Asset transferred to you",
+        message: `${asset.name} (${asset.assetTag}) has been transferred to you.`,
+        relatedEntityType: "Asset",
+        relatedEntityId: asset.id,
+      },
+      tx
+    );
+
+    if (transfer.requestedById !== transfer.toUserId) {
+      await notify(
+        transfer.requestedById,
+        {
+          type: NotificationType.TRANSFER_APPROVED,
+          title: "Transfer request approved",
+          message: `Your transfer request for ${asset.name} (${asset.assetTag}) was approved.`,
+          relatedEntityType: "TransferRequest",
+          relatedEntityId: transferId,
+        },
+        tx
+      );
+    }
+
+    return updated;
+  });
 
   return updatedTransfer;
 }
