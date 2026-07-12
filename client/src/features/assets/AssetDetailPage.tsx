@@ -10,6 +10,8 @@ import {
 import { Button } from "@/components/ui/button"
 import { AllocateDialog } from "@/features/allocations/AllocateDialog"
 import { allocateAsset } from "@/features/allocations/api"
+import { RequestTransferDialog } from "@/features/transfers/RequestTransferDialog"
+import { createTransfer } from "@/features/transfers/api"
 import { useAuth } from "@/lib/auth"
 import { getAsset } from "./api"
 import type { AssetDetail } from "./types"
@@ -38,6 +40,7 @@ export function AssetDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [transferDialogOpen, setTransferDialogOpen] = useState(false)
 
   const refresh = () => {
     if (!id) return
@@ -55,6 +58,14 @@ export function AssetDetailPage() {
     await allocateAsset({ assetId: id, holderId, dueDate })
     refresh()
   }
+
+  const handleRequestTransfer = async (toUserId: string, reason?: string) => {
+    if (!id) return
+    await createTransfer(id, toUserId, reason)
+    refresh()
+  }
+
+  const currentHolderId = asset?.allocations.find((a) => a.status === "ACTIVE")?.holder.id
 
   if (isLoading) {
     return <div className="p-8 text-sm text-muted-foreground">Loading...</div>
@@ -84,6 +95,11 @@ export function AssetDetailPage() {
           {canAllocate && asset.status === "AVAILABLE" && (
             <Button onClick={() => setDialogOpen(true)}>Allocate</Button>
           )}
+          {asset.status === "ALLOCATED" && (
+            <Button variant="outline" onClick={() => setTransferDialogOpen(true)}>
+              Request transfer
+            </Button>
+          )}
         </CardHeader>
         <CardContent className="flex flex-col gap-1 text-sm">
           {asset.serialNumber && <p>Serial number: {asset.serialNumber}</p>}
@@ -112,7 +128,7 @@ export function AssetDetailPage() {
           <Section title="Transfer requests" count={asset.transferRequests.length}>
             {asset.transferRequests.map((t) => (
               <li key={t.id}>
-                {t.status} — to {t.toUser.name}, requested{" "}
+                {t.status} — {t.fromUser?.name ?? "unassigned"} → {t.toUser.name}, requested{" "}
                 {new Date(t.requestedAt).toLocaleDateString()}
               </li>
             ))}
@@ -142,9 +158,20 @@ export function AssetDetailPage() {
         </CardContent>
       </Card>
 
-      {canAllocate && (
-        <AllocateDialog open={dialogOpen} onOpenChange={setDialogOpen} onAllocate={handleAllocate} />
+      {canAllocate && id && (
+        <AllocateDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          assetId={id}
+          onAllocate={handleAllocate}
+        />
       )}
+      <RequestTransferDialog
+        open={transferDialogOpen}
+        onOpenChange={setTransferDialogOpen}
+        currentHolderId={currentHolderId}
+        onRequest={handleRequestTransfer}
+      />
     </div>
   )
 }

@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { createTransfer } from "@/features/transfers/api"
 import { listUsers } from "@/features/users/api"
 import type { DirectoryUser } from "@/features/users/types"
 import { ApiError } from "@/lib/api"
@@ -30,12 +31,15 @@ interface AllocateFormValues {
 interface AllocateDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  assetId: string
   onAllocate: (holderId: string, dueDate?: string) => Promise<void>
 }
 
-export function AllocateDialog({ open, onOpenChange, onAllocate }: AllocateDialogProps) {
+export function AllocateDialog({ open, onOpenChange, assetId, onAllocate }: AllocateDialogProps) {
   const [formError, setFormError] = useState<string | null>(null)
   const [conflict, setConflict] = useState<AllocationConflictDetails | null>(null)
+  const [requestedHolderId, setRequestedHolderId] = useState<string | null>(null)
+  const [transferRequested, setTransferRequested] = useState(false)
   const [users, setUsers] = useState<DirectoryUser[]>([])
 
   const {
@@ -51,6 +55,7 @@ export function AllocateDialog({ open, onOpenChange, onAllocate }: AllocateDialo
     reset({ holderId: "", dueDate: "" })
     setFormError(null)
     setConflict(null)
+    setTransferRequested(false)
     listUsers()
       .then(setUsers)
       .catch(() => setUsers([]))
@@ -67,9 +72,23 @@ export function AllocateDialog({ open, onOpenChange, onAllocate }: AllocateDialo
         const details = err.details as AllocationConflictDetails
         if (details.holder) {
           setConflict(details)
+          setRequestedHolderId(values.holderId)
           return
         }
       }
+      setFormError(err instanceof Error ? err.message : "Something went wrong")
+    }
+  }
+
+  // BR-007: a blocked allocation offers a transfer request instead --
+  // reuse the recipient the admin already picked in the form above.
+  const handleRequestTransfer = async () => {
+    if (!requestedHolderId) return
+    setFormError(null)
+    try {
+      await createTransfer(assetId, requestedHolderId)
+      setTransferRequested(true)
+    } catch (err) {
       setFormError(err instanceof Error ? err.message : "Something went wrong")
     }
   }
@@ -113,11 +132,19 @@ export function AllocateDialog({ open, onOpenChange, onAllocate }: AllocateDialo
           </div>
 
           {conflict && (
-            <p className="text-sm text-destructive">
-              Already allocated to {conflict.holder.name} ({conflict.holder.email}) since{" "}
-              {new Date(conflict.allocatedAt).toLocaleDateString()}. A transfer request workflow
-              is coming in a later issue.
-            </p>
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-destructive">
+                Already allocated to {conflict.holder.name} ({conflict.holder.email}) since{" "}
+                {new Date(conflict.allocatedAt).toLocaleDateString()}.
+              </p>
+              {transferRequested ? (
+                <p className="text-sm text-muted-foreground">Transfer requested.</p>
+              ) : (
+                <Button type="button" variant="outline" size="sm" onClick={handleRequestTransfer}>
+                  Request transfer instead
+                </Button>
+              )}
+            </div>
           )}
           {formError && <p className="text-sm text-destructive">{formError}</p>}
 

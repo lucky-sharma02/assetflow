@@ -9,6 +9,7 @@ import { AssetsPage } from "./features/assets/AssetsPage.tsx"
 import { BookingsPage } from "./features/bookings/BookingsPage.tsx"
 import { CategoriesPage } from "./features/categories/CategoriesPage.tsx"
 import { DepartmentsPage } from "./features/departments/DepartmentsPage.tsx"
+import { TransfersPage } from "./features/transfers/TransfersPage.tsx"
 import { EmployeeDirectoryPage } from "./features/users/EmployeeDirectoryPage.tsx"
 import "./index.css"
 import { AuthProvider } from "./lib/auth.tsx"
@@ -32,6 +33,7 @@ createRoot(document.getElementById("root")!).render(
             <Route path="/assets/:id" element={<AssetDetailPage />} />
             <Route path="/employees" element={<EmployeeDirectoryPage />} />
             <Route path="/bookings" element={<BookingsPage />} />
+            <Route path="/transfers" element={<TransfersPage />} />
           </Route>
         </Routes>
       </AuthProvider>

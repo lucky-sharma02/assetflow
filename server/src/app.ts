@@ -9,6 +9,7 @@ import { bookingsRouter } from "./routes/bookings";
 import { categoriesRouter } from "./routes/categories";
 import { departmentsRouter } from "./routes/departments";
 import { healthRouter } from "./routes/health";
+import { transfersRouter } from "./routes/transfers";
 import { usersRouter } from "./routes/users";
 
 export function createApp() {
@@ -31,6 +32,7 @@ export function createApp() {
   app.use("/api/assets", assetsRouter);
   app.use("/api/bookings", bookingsRouter);
   app.use("/api/allocations", allocationsRouter);
+  app.use("/api/transfers", transfersRouter);
 
   app.use(errorHandler);
 
