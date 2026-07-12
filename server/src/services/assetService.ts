@@ -1,11 +1,41 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { AppError } from "../middleware/errorHandler";
-import type { RegisterAssetInput } from "../validation/asset";
+import type { AssetQueryInput, RegisterAssetInput } from "../validation/asset";
 
 const assetInclude = {
   category: { select: { id: true, name: true } },
   department: { select: { id: true, name: true } },
+} satisfies Prisma.AssetInclude;
+
+const userSummary = { select: { id: true, name: true, email: true } };
+
+// History relations are all empty until later issues add the
+// endpoints that create them (#15 allocations, #16 transfers, #19/20
+// bookings, #22 maintenance, #25-27 audits) — the plumbing is wired
+// here so the detail page doesn't need to change again once they land.
+const assetDetailInclude = {
+  ...assetInclude,
+  allocations: {
+    orderBy: { allocatedAt: "desc" },
+    include: { holder: userSummary, allocatedBy: userSummary },
+  },
+  transferRequests: {
+    orderBy: { requestedAt: "desc" },
+    include: { fromUser: userSummary, toUser: userSummary, requestedBy: userSummary },
+  },
+  bookings: {
+    orderBy: { startTime: "desc" },
+    include: { bookedBy: userSummary },
+  },
+  maintenanceRequests: {
+    orderBy: { requestedAt: "desc" },
+    include: { requestedBy: userSummary },
+  },
+  auditRecords: {
+    orderBy: { verifiedAt: "desc" },
+    include: { verifiedBy: userSummary, auditCycle: { select: { id: true, name: true } } },
+  },
 } satisfies Prisma.AssetInclude;
 
 const TAG_PREFIX = "AF-";
@@ -35,15 +65,31 @@ async function assertDepartmentExists(departmentId: string) {
   }
 }
 
-export async function listAssets() {
+export async function listAssets(filters: AssetQueryInput = {}) {
+  const where: Prisma.AssetWhereInput = {
+    categoryId: filters.categoryId,
+    departmentId: filters.departmentId,
+    status: filters.status,
+    condition: filters.condition,
+  };
+
+  if (filters.search) {
+    where.OR = [
+      { name: { contains: filters.search, mode: "insensitive" } },
+      { assetTag: { contains: filters.search, mode: "insensitive" } },
+      { serialNumber: { contains: filters.search, mode: "insensitive" } },
+    ];
+  }
+
   return prisma.asset.findMany({
+    where,
     include: assetInclude,
     orderBy: { createdAt: "desc" },
   });
 }
 
 export async function getAssetById(id: string) {
-  const asset = await prisma.asset.findUnique({ where: { id }, include: assetInclude });
+  const asset = await prisma.asset.findUnique({ where: { id }, include: assetDetailInclude });
   if (!asset) {
     throw new AppError("Asset not found", 404);
   }
