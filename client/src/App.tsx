@@ -41,6 +41,11 @@ function App() {
             Transfer requests
           </Link>
           {(user?.role === "ADMIN" || user?.role === "ASSET_MANAGER") && (
+            <Link to="/dashboard" className="text-sm underline underline-offset-4">
+              Dashboard
+            </Link>
+          )}
+          {(user?.role === "ADMIN" || user?.role === "ASSET_MANAGER") && (
             <Link to="/employees" className="text-sm underline underline-offset-4">
               Employee directory
             </Link>
