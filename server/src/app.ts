@@ -2,6 +2,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
 import { errorHandler } from "./middleware/errorHandler";
+import { authRouter } from "./routes/auth";
 import { healthRouter } from "./routes/health";
 
 export function createApp() {
@@ -17,6 +18,7 @@ export function createApp() {
   app.use(cookieParser());
 
   app.use("/api/health", healthRouter);
+  app.use("/api/auth", authRouter);
 
   app.use(errorHandler);
 
