@@ -29,3 +29,15 @@ export const recordAuditResultSchema = z.object({
 });
 
 export type RecordAuditResultInput = z.infer<typeof recordAuditResultSchema>;
+
+// lostAssetIds is a manual selection, not auto-derived (see auditService's
+// closeCycle() for why): the current data model has no field that cleanly
+// distinguishes "found but in worse condition than expected" from "could
+// not be located at all" -- both are just isDiscrepant: true with free-text
+// discrepancyNotes. The Admin/Asset Manager closing the cycle reviews the
+// discrepancy report and explicitly names which assets are confirmed missing.
+export const closeCycleSchema = z.object({
+  lostAssetIds: z.array(z.string().min(1)).optional(),
+});
+
+export type CloseCycleInput = z.infer<typeof closeCycleSchema>;

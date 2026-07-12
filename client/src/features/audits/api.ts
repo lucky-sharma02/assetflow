@@ -1,5 +1,5 @@
 import { apiFetch } from "@/lib/api"
-import type { AuditCycle, PendingAuditItem } from "./types"
+import type { AuditCycle, DiscrepancyReportItem, PendingAuditItem } from "./types"
 
 export interface CreateAuditCycleInput {
   name: string
@@ -43,4 +43,20 @@ export async function recordAuditResult(
     body: JSON.stringify(input),
   })
   return data.item
+}
+
+export async function getDiscrepancyReport(cycleId: string): Promise<DiscrepancyReportItem[]> {
+  const data = await apiFetch(`/api/audits/${cycleId}/discrepancy-report`)
+  return data.items
+}
+
+export async function closeAuditCycle(
+  cycleId: string,
+  lostAssetIds: string[]
+): Promise<AuditCycle> {
+  const data = await apiFetch(`/api/audits/${cycleId}/close`, {
+    method: "PATCH",
+    body: JSON.stringify({ lostAssetIds }),
+  })
+  return data.auditCycle
 }

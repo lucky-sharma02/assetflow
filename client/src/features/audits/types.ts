@@ -13,6 +13,25 @@ export interface AuditCycle {
   _count: { assignments: number; records: number }
 }
 
+export interface DiscrepancyReportItem {
+  id: string
+  foundStatus: string | null
+  foundCondition: string | null
+  isDiscrepant: boolean
+  discrepancyNotes: string | null
+  verifiedAt: string | null
+  auditCycleId: string
+  assetId: string
+  asset: {
+    id: string
+    assetTag: string
+    name: string
+    status: string
+    condition: string
+  }
+  verifiedBy: { id: string; name: string; email: string } | null
+}
+
 export interface PendingAuditItem {
   id: string
   isDiscrepant: boolean
