@@ -1,0 +1,13 @@
+// AssetFlow Prisma schema
+// Core models (Department, User, AssetCategory, Asset) land in issue #4.
+// Transactional models (allocations, transfers, bookings, maintenance, audits,
+// notifications, activity log) land in issue #5.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
