@@ -89,6 +89,24 @@ export async function listAssets(filters: AssetQueryInput = {}) {
   });
 }
 
+// Flat, human-readable shape for CSV export -- relations resolved to
+// their display names (category/department name), not raw ids, since
+// this is meant to be opened in a spreadsheet.
+export async function listAssetsForExport() {
+  const assets = await listAssets();
+  return assets.map((asset) => ({
+    assetTag: asset.assetTag,
+    name: asset.name,
+    category: asset.category.name,
+    department: asset.department?.name ?? "",
+    status: asset.status,
+    condition: asset.condition,
+    location: asset.location ?? "",
+    serialNumber: asset.serialNumber ?? "",
+    isBookable: asset.isBookable ? "Yes" : "No",
+  }));
+}
+
 export async function getAssetById(id: string) {
   const asset = await prisma.asset.findUnique({ where: { id }, include: assetDetailInclude });
   if (!asset) {

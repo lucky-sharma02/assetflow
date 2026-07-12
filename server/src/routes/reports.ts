@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { csvFilename, toCSV } from "../lib/csv";
 import { authenticate } from "../middleware/authenticate";
 import { requireRole } from "../middleware/requireRole";
 import {
@@ -35,6 +36,31 @@ reportsRouter.get("/department-allocation", async (_req, res, next) => {
   try {
     const report = await getDepartmentAllocationReport();
     res.json({ items: report });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Department-wise allocation was chosen as the one report to make
+// exportable: it's naturally one row per department with clean scalar
+// columns, unlike asset utilization (a single percentage breakdown, not
+// really "rows") -- maintenance frequency is also tabular and could gain
+// an export the same way later if needed.
+reportsRouter.get("/department-allocation/export", async (_req, res, next) => {
+  try {
+    const items = await getDepartmentAllocationReport();
+    const csv = toCSV(items, [
+      { key: "departmentName", header: "Department" },
+      { key: "totalAssets", header: "Total Assets" },
+      { key: "allocatedAssets", header: "Allocated Assets" },
+      { key: "percentage", header: "Allocated %" },
+    ]);
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${csvFilename("department-allocation")}"`
+    );
+    res.send(csv);
   } catch (err) {
     next(err);
   }

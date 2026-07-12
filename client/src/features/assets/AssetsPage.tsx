@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select"
 import { listCategories } from "@/features/categories/api"
 import type { Category } from "@/features/categories/types"
+import { downloadFile } from "@/lib/api"
 import { useAuth } from "@/lib/auth"
 import { listAssets, registerAsset } from "./api"
 import { AssetFormDialog } from "./AssetFormDialog"
@@ -74,6 +75,15 @@ export function AssetsPage() {
     refresh()
   }
 
+  const handleExport = async () => {
+    setError(null)
+    try {
+      await downloadFile("/api/assets/export", "assets-export.csv")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to export")
+    }
+  }
+
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-4 p-8">
       <div className="flex items-center justify-between">
@@ -83,7 +93,12 @@ export function AssetsPage() {
             Back home
           </Link>
         </div>
-        {canRegister && <Button onClick={() => setDialogOpen(true)}>Register asset</Button>}
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleExport}>
+            Export CSV
+          </Button>
+          {canRegister && <Button onClick={() => setDialogOpen(true)}>Register asset</Button>}
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-2">
