@@ -19,6 +19,14 @@ import { cancelBooking, createBooking, listBookings, rescheduleBooking } from ".
 import type { BookingFormValues, RescheduleFormValues } from "./schemas"
 import type { Booking } from "./types"
 
+// FullCalendar's timeGridWeek view renders 7 day-columns and doesn't
+// switch views based on viewport width on its own -- that's an app-level
+// decision, not a single FullCalendar prop. On a narrow (phone-width)
+// viewport, timeGridDay (a single day-column) is used instead, so the
+// grid isn't forced wider than the screen in the first place. The
+// overflow-x-auto wrapper below is the remaining safety net regardless.
+const NARROW_VIEWPORT_QUERY = "(max-width: 640px)"
+
 export function BookingsPage() {
   const { user } = useAuth()
   const [bookableAssets, setBookableAssets] = useState<Asset[]>([])
@@ -29,6 +37,16 @@ export function BookingsPage() {
   const [selectedRange, setSelectedRange] = useState<{ start: string; end: string } | null>(null)
   const [managingBooking, setManagingBooking] = useState<Booking | null>(null)
   const [manageDialogOpen, setManageDialogOpen] = useState(false)
+  const [isNarrowViewport, setIsNarrowViewport] = useState(
+    () => window.matchMedia(NARROW_VIEWPORT_QUERY).matches
+  )
+
+  useEffect(() => {
+    const query = window.matchMedia(NARROW_VIEWPORT_QUERY)
+    const handleChange = () => setIsNarrowViewport(query.matches)
+    query.addEventListener("change", handleChange)
+    return () => query.removeEventListener("change", handleChange)
+  }, [])
 
   useEffect(() => {
     listAssets({ isBookable: true })
@@ -86,7 +104,7 @@ export function BookingsPage() {
   const confirmedBookings = bookings.filter((b) => b.status === "CONFIRMED")
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-4 p-8">
+    <div className="mx-auto flex max-w-4xl flex-col gap-4 p-4 sm:p-8">
       <div>
         <h1 className="text-2xl font-semibold">Resource booking</h1>
         <Link to="/" className="text-sm text-muted-foreground underline underline-offset-4">
@@ -104,7 +122,7 @@ export function BookingsPage() {
       ) : (
         <>
           <Select value={selectedAssetId} onValueChange={setSelectedAssetId}>
-            <SelectTrigger className="w-64">
+            <SelectTrigger className="w-full sm:w-64">
               <SelectValue placeholder="Select a resource" />
             </SelectTrigger>
             <SelectContent>
@@ -121,11 +139,11 @@ export function BookingsPage() {
             cancel it.
           </p>
 
-          <div className="rounded-md border p-2">
+          <div className="overflow-x-auto rounded-md border p-2">
             <FullCalendar
-              key={selectedAssetId}
+              key={`${selectedAssetId}-${isNarrowViewport}`}
               plugins={[timeGridPlugin, interactionPlugin]}
-              initialView="timeGridWeek"
+              initialView={isNarrowViewport ? "timeGridDay" : "timeGridWeek"}
               height="auto"
               selectable
               select={(info) => {

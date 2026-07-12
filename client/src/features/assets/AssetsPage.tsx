@@ -85,15 +85,15 @@ export function AssetsPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-4 p-8">
-      <div className="flex items-center justify-between">
+    <div className="mx-auto flex max-w-4xl flex-col gap-4 p-4 sm:p-8">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-2xl font-semibold">Assets</h1>
           <Link to="/" className="text-sm text-muted-foreground underline underline-offset-4">
             Back home
           </Link>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={handleExport}>
             Export CSV
           </Button>
