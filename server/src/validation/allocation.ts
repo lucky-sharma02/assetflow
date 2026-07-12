@@ -13,6 +13,13 @@ export const createAllocationSchema = z.object({
 
 export type CreateAllocationInput = z.infer<typeof createAllocationSchema>;
 
+export const returnAllocationSchema = z.object({
+  conditionAtReturn: z.enum(ASSET_CONDITIONS),
+  notes: z.string().trim().max(2000).optional(),
+});
+
+export type ReturnAllocationInput = z.infer<typeof returnAllocationSchema>;
+
 export const allocationQuerySchema = z.object({
   assetId: z.string().min(1).optional(),
   holderId: z.string().min(1).optional(),

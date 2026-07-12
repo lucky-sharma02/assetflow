@@ -9,7 +9,8 @@ import {
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { AllocateDialog } from "@/features/allocations/AllocateDialog"
-import { allocateAsset } from "@/features/allocations/api"
+import { allocateAsset, returnAllocation } from "@/features/allocations/api"
+import { ReturnDialog } from "@/features/allocations/ReturnDialog"
 import { MaintenanceRequestFormDialog } from "@/features/maintenance/MaintenanceRequestFormDialog"
 import { RequestTransferDialog } from "@/features/transfers/RequestTransferDialog"
 import { createTransfer } from "@/features/transfers/api"
@@ -44,6 +45,7 @@ export function AssetDetailPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [transferDialogOpen, setTransferDialogOpen] = useState(false)
   const [maintenanceDialogOpen, setMaintenanceDialogOpen] = useState(false)
+  const [returnDialogOpen, setReturnDialogOpen] = useState(false)
 
   const refresh = () => {
     if (!id) return
@@ -62,13 +64,20 @@ export function AssetDetailPage() {
     refresh()
   }
 
+  const activeAllocation = asset?.allocations.find((a) => a.status === "ACTIVE")
+  const currentHolderId = activeAllocation?.holder.id
+
   const handleRequestTransfer = async (toUserId: string, reason?: string) => {
     if (!id) return
     await createTransfer(id, toUserId, reason)
     refresh()
   }
 
-  const currentHolderId = asset?.allocations.find((a) => a.status === "ACTIVE")?.holder.id
+  const handleReturn = async (conditionAtReturn: AssetDetail["condition"], notes?: string) => {
+    if (!activeAllocation) return
+    await returnAllocation(activeAllocation.id, conditionAtReturn, notes)
+    refresh()
+  }
 
   if (isLoading) {
     return <div className="p-8 text-sm text-muted-foreground">Loading...</div>
@@ -98,6 +107,11 @@ export function AssetDetailPage() {
           <div className="flex gap-2">
             {canAllocate && asset.status === "AVAILABLE" && (
               <Button onClick={() => setDialogOpen(true)}>Allocate</Button>
+            )}
+            {canAllocate && asset.status === "ALLOCATED" && (
+              <Button variant="outline" onClick={() => setReturnDialogOpen(true)}>
+                Return
+              </Button>
             )}
             {asset.status === "ALLOCATED" && (
               <Button variant="outline" onClick={() => setTransferDialogOpen(true)}>
@@ -202,6 +216,14 @@ export function AssetDetailPage() {
           onOpenChange={setMaintenanceDialogOpen}
           assetId={id}
           onCreated={refresh}
+        />
+      )}
+      {canAllocate && (
+        <ReturnDialog
+          open={returnDialogOpen}
+          onOpenChange={setReturnDialogOpen}
+          currentCondition={asset.condition}
+          onReturn={handleReturn}
         />
       )}
     </div>
