@@ -47,3 +47,8 @@ authRouter.get("/me", authenticate, async (req, res, next) => {
     next(err);
   }
 });
+
+authRouter.post("/logout", (_req, res) => {
+  res.clearCookie(AUTH_COOKIE_NAME);
+  res.status(204).send();
+});
