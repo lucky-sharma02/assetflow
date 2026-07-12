@@ -1,0 +1,64 @@
+# ── Dependencies ──
+node_modules/
+server/node_modules/
+client/node_modules/
+
+# ── Build output ──
+dist/
+build/
+server/dist/
+client/dist/
+client/build/
+
+# ── Environment variables ──
+.env
+.env.local
+.env.*.local
+server/.env
+server/.env.local
+client/.env
+client/.env.local
+# NOTE: .env.example files are intentionally NOT ignored — keep them tracked
+
+# ── Prisma ──
+server/prisma/*.db
+server/prisma/dev.db*
+# generated Prisma client (if output path is customized, adjust accordingly)
+
+# ── Multer local uploads (not meant to persist per CLAUDE.md Section 9) ──
+server/uploads/
+!server/uploads/.gitkeep
+
+# ── Logs ──
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ── Editor / IDE ──
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+
+# ── OS junk ──
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ── Testing / coverage ──
+coverage/
+.nyc_output/
+
+# ── Misc ──
+*.tsbuildinfo
+.cache/
+.turbo/CLAUDE.md
