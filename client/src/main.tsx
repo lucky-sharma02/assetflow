@@ -4,6 +4,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom"
 import App from "./App.tsx"
 import { LoginPage } from "./features/auth/LoginPage.tsx"
 import { SignupPage } from "./features/auth/SignupPage.tsx"
+import { CategoriesPage } from "./features/categories/CategoriesPage.tsx"
 import { DepartmentsPage } from "./features/departments/DepartmentsPage.tsx"
 import "./index.css"
 import { AuthProvider } from "./lib/auth.tsx"
@@ -22,6 +23,7 @@ createRoot(document.getElementById("root")!).render(
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<App />} />
             <Route path="/departments" element={<DepartmentsPage />} />
+            <Route path="/categories" element={<CategoriesPage />} />
           </Route>
         </Routes>
       </AuthProvider>
