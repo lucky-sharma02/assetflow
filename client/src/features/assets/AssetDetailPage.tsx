@@ -7,6 +7,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { AllocateDialog } from "@/features/allocations/AllocateDialog"
+import { allocateAsset } from "@/features/allocations/api"
+import { useAuth } from "@/lib/auth"
 import { getAsset } from "./api"
 import type { AssetDetail } from "./types"
 
@@ -27,18 +31,30 @@ function Section({ title, count, children }: { title: string; count: number; chi
 
 export function AssetDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const { user } = useAuth()
+  const canAllocate = user?.role === "ADMIN" || user?.role === "ASSET_MANAGER"
+
   const [asset, setAsset] = useState<AssetDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [dialogOpen, setDialogOpen] = useState(false)
 
-  useEffect(() => {
+  const refresh = () => {
     if (!id) return
     setIsLoading(true)
     getAsset(id)
       .then(setAsset)
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load"))
       .finally(() => setIsLoading(false))
-  }, [id])
+  }
+
+  useEffect(refresh, [id])
+
+  const handleAllocate = async (holderId: string, dueDate?: string) => {
+    if (!id) return
+    await allocateAsset({ assetId: id, holderId, dueDate })
+    refresh()
+  }
 
   if (isLoading) {
     return <div className="p-8 text-sm text-muted-foreground">Loading...</div>
@@ -55,14 +71,19 @@ export function AssetDetailPage() {
       </Link>
 
       <Card>
-        <CardHeader>
-          <CardTitle>
-            {asset.name} <span className="text-muted-foreground">({asset.assetTag})</span>
-          </CardTitle>
-          <CardDescription>
-            {asset.category.name} · {asset.department?.name ?? "Unassigned"} · {asset.status} ·{" "}
-            {asset.condition}
-          </CardDescription>
+        <CardHeader className="flex flex-row items-start justify-between">
+          <div>
+            <CardTitle>
+              {asset.name} <span className="text-muted-foreground">({asset.assetTag})</span>
+            </CardTitle>
+            <CardDescription>
+              {asset.category.name} · {asset.department?.name ?? "Unassigned"} · {asset.status} ·{" "}
+              {asset.condition}
+            </CardDescription>
+          </div>
+          {canAllocate && asset.status === "AVAILABLE" && (
+            <Button onClick={() => setDialogOpen(true)}>Allocate</Button>
+          )}
         </CardHeader>
         <CardContent className="flex flex-col gap-1 text-sm">
           {asset.serialNumber && <p>Serial number: {asset.serialNumber}</p>}
@@ -120,6 +141,10 @@ export function AssetDetailPage() {
           </Section>
         </CardContent>
       </Card>
+
+      {canAllocate && (
+        <AllocateDialog open={dialogOpen} onOpenChange={setDialogOpen} onAllocate={handleAllocate} />
+      )}
     </div>
   )
 }
