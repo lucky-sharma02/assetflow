@@ -61,9 +61,13 @@ export interface AssetMaintenanceRequest {
   id: string
   status: string
   requestedAt: string
+  approvedAt: string | null
+  resolvedAt: string | null
   issueDescription: string
   photoUrl: string | null
+  notes: string | null
   requestedBy: UserSummary
+  approvedBy: UserSummary | null
 }
 
 export interface AssetAuditRecord {

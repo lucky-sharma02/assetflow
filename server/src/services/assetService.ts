@@ -10,10 +10,10 @@ const assetInclude = {
 
 const userSummary = { select: { id: true, name: true, email: true } };
 
-// History relations are all empty until later issues add the
-// endpoints that create them (#15 allocations, #16 transfers, #19/20
-// bookings, #22 maintenance, #25-27 audits) — the plumbing is wired
-// here so the detail page doesn't need to change again once they land.
+// History relations were wired up empty in #14, ahead of the endpoints
+// that create the data (#15 allocations, #16 transfers, #19/20 bookings,
+// #22/23 maintenance) — each landed with zero changes needed here.
+// #25-27 (audits) are the only relation still pending real data.
 const assetDetailInclude = {
   ...assetInclude,
   allocations: {
@@ -30,7 +30,7 @@ const assetDetailInclude = {
   },
   maintenanceRequests: {
     orderBy: { requestedAt: "desc" },
-    include: { requestedBy: userSummary },
+    include: { requestedBy: userSummary, approvedBy: userSummary },
   },
   auditRecords: {
     orderBy: { verifiedAt: "desc" },

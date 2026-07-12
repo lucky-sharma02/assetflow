@@ -203,6 +203,17 @@ export function AssetDetailPage() {
                       )
                     </>
                   )}
+                  <span className="block text-xs text-muted-foreground">
+                    Requested {new Date(m.requestedAt).toLocaleDateString()} by {m.requestedBy.name}
+                    {m.approvedAt && m.approvedBy && (
+                      <>
+                        {" · "}
+                        {m.status === "REJECTED" ? "Rejected" : "Approved"}{" "}
+                        {new Date(m.approvedAt).toLocaleDateString()} by {m.approvedBy.name}
+                      </>
+                    )}
+                    {m.resolvedAt && <> · Resolved {new Date(m.resolvedAt).toLocaleDateString()}</>}
+                  </span>
                 </span>
                 {canManageMaintenance && m.status === "REQUESTED" && (
                   <span className="flex gap-2">
