@@ -2,6 +2,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
 import { errorHandler } from "./middleware/errorHandler";
+import { allocationsRouter } from "./routes/allocations";
 import { assetsRouter } from "./routes/assets";
 import { authRouter } from "./routes/auth";
 import { bookingsRouter } from "./routes/bookings";
@@ -29,6 +30,7 @@ export function createApp() {
   app.use("/api/users", usersRouter);
   app.use("/api/assets", assetsRouter);
   app.use("/api/bookings", bookingsRouter);
+  app.use("/api/allocations", allocationsRouter);
 
   app.use(errorHandler);
 
