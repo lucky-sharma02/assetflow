@@ -7,6 +7,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { downloadFile } from "@/lib/api"
 import { AssetUtilizationChart } from "./AssetUtilizationChart"
 import {
   getAssetUtilizationReport,
@@ -42,6 +44,18 @@ export function ReportsPage() {
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load"))
       .finally(() => setIsLoading(false))
   }, [])
+
+  const handleExportDepartmentAllocation = async () => {
+    setError(null)
+    try {
+      await downloadFile(
+        "/api/reports/department-allocation/export",
+        "department-allocation.csv"
+      )
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to export")
+    }
+  }
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6 p-8">
@@ -88,11 +102,16 @@ export function ReportsPage() {
           </Card>
 
           <Card>
-            <CardHeader>
-              <CardTitle>Department-wise allocation</CardTitle>
-              <CardDescription>
-                Percentage of each department's assets that are currently allocated.
-              </CardDescription>
+            <CardHeader className="flex flex-row items-start justify-between">
+              <div>
+                <CardTitle>Department-wise allocation</CardTitle>
+                <CardDescription>
+                  Percentage of each department's assets that are currently allocated.
+                </CardDescription>
+              </div>
+              <Button variant="outline" size="sm" onClick={handleExportDepartmentAllocation}>
+                Export CSV
+              </Button>
             </CardHeader>
             <CardContent>
               {departments.length === 0 ? (
