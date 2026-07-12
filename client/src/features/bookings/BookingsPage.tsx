@@ -12,18 +12,23 @@ import {
 } from "@/components/ui/select"
 import { listAssets } from "@/features/assets/api"
 import type { Asset } from "@/features/assets/types"
+import { useAuth } from "@/lib/auth"
 import { BookingFormDialog } from "./BookingFormDialog"
-import { createBooking, listBookings } from "./api"
-import type { BookingFormValues } from "./schemas"
+import { ManageBookingDialog } from "./ManageBookingDialog"
+import { cancelBooking, createBooking, listBookings, rescheduleBooking } from "./api"
+import type { BookingFormValues, RescheduleFormValues } from "./schemas"
 import type { Booking } from "./types"
 
 export function BookingsPage() {
+  const { user } = useAuth()
   const [bookableAssets, setBookableAssets] = useState<Asset[]>([])
   const [selectedAssetId, setSelectedAssetId] = useState<string>("")
   const [bookings, setBookings] = useState<Booking[]>([])
   const [error, setError] = useState<string | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selectedRange, setSelectedRange] = useState<{ start: string; end: string } | null>(null)
+  const [managingBooking, setManagingBooking] = useState<Booking | null>(null)
+  const [manageDialogOpen, setManageDialogOpen] = useState(false)
 
   useEffect(() => {
     listAssets({ isBookable: true })
@@ -52,6 +57,33 @@ export function BookingsPage() {
     })
     refresh()
   }
+
+  const canManage = (booking: Booking) =>
+    user?.role === "ADMIN" || user?.id === booking.bookedById
+
+  const handleEventClick = (bookingId: string) => {
+    const booking = bookings.find((b) => b.id === bookingId)
+    if (!booking || !canManage(booking)) return
+    setManagingBooking(booking)
+    setManageDialogOpen(true)
+  }
+
+  const handleReschedule = async (values: RescheduleFormValues) => {
+    if (!managingBooking) return
+    await rescheduleBooking(managingBooking.id, {
+      startTime: new Date(values.startTime).toISOString(),
+      endTime: new Date(values.endTime).toISOString(),
+    })
+    refresh()
+  }
+
+  const handleCancel = async () => {
+    if (!managingBooking) return
+    await cancelBooking(managingBooking.id)
+    refresh()
+  }
+
+  const confirmedBookings = bookings.filter((b) => b.status === "CONFIRMED")
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-4 p-8">
@@ -84,6 +116,11 @@ export function BookingsPage() {
             </SelectContent>
           </Select>
 
+          <p className="text-xs text-muted-foreground">
+            Click your own booking (or any booking, if you're an Admin) to reschedule or
+            cancel it.
+          </p>
+
           <div className="rounded-md border p-2">
             <FullCalendar
               key={selectedAssetId}
@@ -95,7 +132,8 @@ export function BookingsPage() {
                 setSelectedRange({ start: info.startStr, end: info.endStr })
                 setDialogOpen(true)
               }}
-              events={bookings.map((b) => ({
+              eventClick={(info) => handleEventClick(info.event.id)}
+              events={confirmedBookings.map((b) => ({
                 id: b.id,
                 title: `${b.bookedBy.name}${b.purpose ? ` — ${b.purpose}` : ""}`,
                 start: b.startTime,
@@ -110,6 +148,14 @@ export function BookingsPage() {
             assetId={selectedAssetId}
             initialRange={selectedRange}
             onSubmit={handleSubmit}
+          />
+
+          <ManageBookingDialog
+            open={manageDialogOpen}
+            onOpenChange={setManageDialogOpen}
+            booking={managingBooking}
+            onReschedule={handleReschedule}
+            onCancel={handleCancel}
           />
         </>
       )}
